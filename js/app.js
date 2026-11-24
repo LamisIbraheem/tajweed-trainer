@@ -329,11 +329,23 @@
     if (!focus) window.scrollTo(0, 0);
   }
 
+  // In Arabic, show Arabic-Indic digits (٠١٢…) and the Arabic percent sign in all rendered text.
+  const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+  function localizeDigits(root) {
+    if (state.lang !== "ar") return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (/[0-9%]/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/[0-9]/g, d => AR_DIGITS[d]).replace(/%/g, "٪");
+    }
+  }
+  new MutationObserver(() => localizeDigits(app)).observe(app, { childList: true, subtree: true, characterData: true });
+
   function applyLang() {
     document.documentElement.lang = state.lang;
     document.documentElement.dir = state.lang === "ar" ? "rtl" : "ltr";
     document.title = t("appName");
     document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
+    localizeDigits(document.querySelector("footer"));
   }
 
   document.getElementById("lang").onclick = () => {
