@@ -18,6 +18,16 @@ window.I18N = {
     noMistakes: "No mistakes. Well done! ما شاء الله",
     perRule: "Mastery by rule", attempts: "attempts", statusNew: "Not started", statusLearning: "Learning", statusMastered: "Mastered",
     history: "Quiz history", noHistory: "No quizzes yet.", reset: "Reset all progress", resetConfirm: "Erase all progress? This cannot be undone.",
+    backupTitle: "Save or move your progress",
+    backupIntro: "Your progress is saved in this browser only. To keep a backup or continue on another device, copy your progress code or download a file, then load it there.",
+    backupCopy: "Copy progress code", backupDownload: "Download file", backupPaste: "Paste a progress code here…",
+    backupLoad: "Load code", backupLoadFile: "Load from file",
+    backupCopied: "Code copied. Paste it on your other device and press “Load code”.",
+    backupCopyManual: "Copy the code from the box above, then paste it on your other device.",
+    backupDownloaded: "File downloaded. Open this page on the other device and press “Load from file”.",
+    backupInvalid: "That code or file isn't valid Tajweed Trainer progress.",
+    backupConfirm: "Replace the progress in this browser with the loaded progress?",
+    backupLoaded: "Progress loaded.",
     openLesson: "Open lesson", footer: "Rules follow the riwayah of Hafs 'an 'Asim. Always confirm your recitation with a qualified teacher."
   },
   ar: {
@@ -39,6 +49,16 @@ window.I18N = {
     noMistakes: "لا أخطاء، ما شاء الله!",
     perRule: "الإتقان لكل حكم", attempts: "محاولات", statusNew: "لم يبدأ", statusLearning: "قيد التعلّم", statusMastered: "متقن",
     history: "سجل الاختبارات", noHistory: "لا توجد اختبارات بعد.", reset: "مسح كل التقدّم", resetConfirm: "هل تريد مسح كل التقدّم؟ لا يمكن التراجع.",
+    backupTitle: "احفظ تقدّمك أو انقله",
+    backupIntro: "يُحفظ تقدّمك في هذا المتصفح فقط. لحفظ نسخة احتياطية أو المتابعة على جهاز آخر، انسخ رمز التقدّم أو نزّل ملفًا، ثم حمّله هناك.",
+    backupCopy: "انسخ رمز التقدّم", backupDownload: "نزّل ملفًا", backupPaste: "الصق رمز التقدّم هنا…",
+    backupLoad: "حمّل الرمز", backupLoadFile: "حمّل من ملف",
+    backupCopied: "تم نسخ الرمز. الصقه على جهازك الآخر واضغط «حمّل الرمز».",
+    backupCopyManual: "انسخ الرمز من المربع أعلاه، ثم الصقه على جهازك الآخر.",
+    backupDownloaded: "تم تنزيل الملف. افتح هذه الصفحة على الجهاز الآخر واضغط «حمّل من ملف».",
+    backupInvalid: "هذا الرمز أو الملف ليس تقدّمًا صالحًا من معلّم التجويد.",
+    backupConfirm: "هل تريد استبدال التقدّم في هذا المتصفح بالتقدّم المحمَّل؟",
+    backupLoaded: "تم تحميل التقدّم.",
     openLesson: "افتح الدرس", footer: "الأحكام على رواية حفص عن عاصم. اعرض تلاوتك دائمًا على معلّم متقن."
   }
 };

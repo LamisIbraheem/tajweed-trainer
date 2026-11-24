@@ -112,3 +112,12 @@ td { padding: .45rem .3rem; border-top: 1px solid var(--line); }
   .prow { grid-template-columns: 1fr 1fr; }
   .qar { font-size: 2.3rem; }
 }
+
+/* backup (export / import) */
+.backup textarea { width: 100%; box-sizing: border-box; margin-top: 1rem; padding: .6rem .7rem; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--bg); color: var(--ink); font: .82rem/1.4 ui-monospace, Consolas, monospace; resize: vertical; word-break: break-all; }
+.backup textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.backup label.btn { cursor: pointer; }
+.bk-msg { min-height: 1.4em; margin: .8rem 0 0; font-size: .9rem; }
+.bk-msg.ok { color: var(--ok); }
+.bk-msg.bad { color: var(--bad); }

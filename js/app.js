@@ -307,10 +307,92 @@
           <td class="muted">${h.cats.length === categories.length ? t("allCats") : h.cats.map(id => esc(L(catById[id].name))).join("، ")}</td></tr>`).join("")}</tbody></table>`
           : `<p class="muted">${t("noHistory")}</p>`}
       </div>
+      <div class="card backup">
+        <h2>${t("backupTitle")}</h2>
+        <p class="muted">${t("backupIntro")}</p>
+        <div class="row">
+          <button class="btn" id="bk-copy">${t("backupCopy")}</button>
+          <button class="btn ghost" id="bk-download">${t("backupDownload")}</button>
+        </div>
+        <textarea id="bk-code" rows="3" spellcheck="false" dir="ltr" placeholder="${t("backupPaste")}"></textarea>
+        <div class="row">
+          <button class="btn" id="bk-load">${t("backupLoad")}</button>
+          <label class="btn ghost" for="bk-file">${t("backupLoadFile")}</label>
+          <input type="file" id="bk-file" accept=".json,.txt,application/json,text/plain" hidden>
+        </div>
+        <p id="bk-msg" class="bk-msg" role="status"></p>
+      </div>
       <button class="btn danger" id="reset">${t("reset")}</button>`;
     app.querySelector("#reset").onclick = () => {
       if (confirm(t("resetConfirm"))) { state = Object.assign(loadState(), { learned: {}, stats: {}, history: [] }); save(); viewProgress(); }
     };
+    const box = app.querySelector("#bk-code"), msg = app.querySelector("#bk-msg");
+    const say = (k, ok) => { msg.textContent = t(k); msg.className = "bk-msg " + (ok ? "ok" : "bad"); };
+    app.querySelector("#bk-copy").onclick = async () => {
+      box.value = exportCode();   // set .value (not text content) so digit localisation never touches the code
+      box.select();
+      try { await navigator.clipboard.writeText(box.value); say("backupCopied", true); }
+      catch (e) { say("backupCopyManual", true); }
+    };
+    app.querySelector("#bk-download").onclick = () => {
+      const blob = new Blob([JSON.stringify(exportData(), null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `tajweed-progress-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      say("backupDownloaded", true);
+    };
+    const load = text => {
+      const data = parseBackup(text);
+      if (!data) return say("backupInvalid", false);
+      if (!confirm(t("backupConfirm"))) return;
+      Object.assign(state, data); save(); viewProgress();
+      const m = app.querySelector("#bk-msg"); m.textContent = t("backupLoaded"); m.className = "bk-msg ok";
+    };
+    app.querySelector("#bk-load").onclick = () => load(box.value);
+    app.querySelector("#bk-file").onchange = e => {
+      const f = e.target.files[0]; if (!f) return;
+      f.text().then(load, () => say("backupInvalid", false));
+      e.target.value = "";
+    };
+  }
+
+  // ---------- backup (export / import) ----------
+  function exportData() {
+    return { app: "tajweed-trainer", v: 1, saved: new Date().toISOString(), learned: state.learned, stats: state.stats, history: state.history };
+  }
+  function exportCode() {
+    const bytes = new TextEncoder().encode(JSON.stringify(exportData()));
+    let bin = ""; bytes.forEach(b => bin += String.fromCharCode(b));
+    return "TJW1." + btoa(bin);
+  }
+  // Accepts a downloaded JSON file or a copied code. Returns clean {learned, stats, history} or null.
+  function parseBackup(text) {
+    try {
+      text = String(text || "").trim();
+      if (!text.startsWith("{")) {
+        const b64 = text.replace(/^TJW1\./, "").replace(/\s+/g, "");
+        text = new TextDecoder().decode(Uint8Array.from(atob(b64), ch => ch.charCodeAt(0)));
+      }
+      const d = JSON.parse(text);
+      if (!d || d.app !== "tajweed-trainer") return null;
+      const isObj = o => o && typeof o === "object" && !Array.isArray(o);
+      const num = x => Number.isFinite(x) && x >= 0 ? Math.floor(x) : 0;
+      const learned = {}, stats = {};
+      if (isObj(d.learned)) for (const id in d.learned) if (ruleById[id] && d.learned[id]) learned[id] = true;
+      if (isObj(d.stats)) for (const id in d.stats) {
+        const s = d.stats[id];
+        if (!ruleById[id] || !isObj(s)) continue;
+        const recent = Array.isArray(s.recent) ? s.recent.slice(-10).map(x => x ? 1 : 0) : [];
+        stats[id] = { a: num(s.a), c: Math.min(num(s.c), num(s.a)), recent };
+      }
+      const history = (Array.isArray(d.history) ? d.history : [])
+        .filter(h => isObj(h) && !isNaN(new Date(h.date)) && Array.isArray(h.cats))
+        .map(h => ({ date: h.date, score: num(h.score), total: num(h.total), cats: h.cats.filter(id => catById[id]), mode: h.mode === "weak" ? "weak" : "mixed" }))
+        .filter(h => h.total > 0 && h.cats.length).slice(0, 50);
+      return { learned, stats, history };
+    } catch (e) { return null; }
   }
 
   // ---------- router ----------
