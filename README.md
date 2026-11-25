@@ -29,3 +29,4 @@ No installs are needed. Fonts load from Google Fonts when online and fall back t
 - `js/app.js`: router, views, quiz engine, progress.
 - `css/style.css`: styles (light and dark).
 - `js/audio.js`: generated audio clip map (ayah file + start/end time for each example). After adding or changing examples in `data.js`, regenerate it with `perl tools/audio_map.pl js/data.js <tanzil quran-simple JSON> js/audio.js <cache dir>` (the Quran text JSON is from https://api.alquran.cloud/v1/quran/quran-simple).
+- `index.html` loads the CSS/JS with a `?v=…` version. After changing any of them, bump that version (one value, five places) so visitors' browsers fetch the new files together instead of mixing cached and new ones.
