@@ -1,4 +1,6 @@
-// Tajweed rule data (riwayah Hafs 'an 'Asim).
+// Tajweed rule data (riwayah Hafs 'an 'Asim, via ash-Shatibiyyah).
+// Main reference: غاية المريد في علم التجويد, عطية قابل نصر (4th ed.), https://archive.org/details/20191118_20191118_1229
+// Quran examples checked against the tanzil.net text.
 // Example syntax: {...} = highlighted part, trailing "|" = read while stopping (waqf).
 window.TAJWEED = {
   categories: [
@@ -12,8 +14,8 @@ window.TAJWEED = {
       intro: { en: "Ghunnah is a nasal sound produced from the nose. It is at its strongest on a noon or meem with shaddah.",
                ar: "الغنة صوت يخرج من الخيشوم، وأكملها في النون والميم المشددتين." } },
     { id: "qalqalah", color: "#1565c0", name: { en: "Qalqalah", ar: "القلقلة" },
-      intro: { en: "Qalqalah is an echoing bounce on five letters, collected in قُطْبُ جَدٍّ (ق ط ب ج د), when they carry sukun.",
-               ar: "القلقلة اضطراب الصوت عند النطق بالحرف ساكنًا حتى يُسمع له نبرة قوية، وحروفها مجموعة في «قُطْبُ جَدٍّ»." } },
+      intro: { en: "Qalqalah is an echoing bounce on five letters, collected in قُطْبُ جَدٍّ (ق ط ب ج د), when they carry sukun. It is strongest when stopping on one with shaddah, then when stopping on one without, then on a sakin letter while reading on.",
+               ar: "القلقلة اضطراب الصوت عند النطق بالحرف ساكنًا حتى يُسمع له نبرة قوية، وحروفها مجموعة في «قُطْبُ جَدٍّ». وأقواها في الساكن الموقوف عليه المشدد، ثم الموقوف عليه غير المشدد، ثم الساكن وصلًا." } },
     { id: "lam", color: "#6a1b9a", name: { en: "Rules of Lam", ar: "أحكام اللام" },
       intro: { en: "The lam in the word Allah, and the lam of the definite article ال, each have their own rules.",
                ar: "للام في لفظ الجلالة حكمان، وللام التعريف «ال» حكمان." } },
@@ -41,8 +43,8 @@ window.TAJWEED = {
       summary: { en: "Merge the noon into the next word's first letter, with ghunnah held for 2 harakat. Letters: ي ن م و (يَنْمُو).",
                  ar: "إدخال النون الساكنة أو التنوين في الحرف التالي مع غنة بمقدار حركتين، وحروفه مجموعة في «يَنْمُو»." },
       letters: "ي ن م و",
-      how: { en: "This only happens across two words. Inside a single word (دُنْيَا، بُنْيَانٌ، صِنْوَانٌ، قِنْوَانٌ) the noon is read clearly instead (izhar mutlaq).",
-             ar: "لا يكون إلا في كلمتين. فإن اجتمعا في كلمة واحدة وجب الإظهار المطلق كما في: دُنْيَا، بُنْيَانٌ، صِنْوَانٌ، قِنْوَانٌ." },
+      how: { en: "This only happens across two words. Inside a single word (دُنْيَا، بُنْيَانٌ، صِنْوَانٌ، قِنْوَانٌ) the noon is read clearly instead (izhar mutlaq). It is called incomplete idgham (naqis) because the ghunnah remains; some scholars call it complete with ن and م, which is why the mushaf puts a shaddah on them.",
+             ar: "لا يكون إلا في كلمتين. فإن اجتمعا في كلمة واحدة وجب الإظهار المطلق كما في: دُنْيَا، بُنْيَانٌ، صِنْوَانٌ، قِنْوَانٌ. ويُسمى إدغامًا ناقصًا لبقاء الغنة، وقيل هو كامل في النون والميم ولذلك تُشدَّدان في المصحف." },
       examples: ["مَ{ن يَ}قُولُ", "مِ{ن نِّ}عْمَةٍ", "مِ{ن مَّ}الٍ", "مِ{ن وَ}الٍ", "خَيْ{رًا يَ}رَهُ"],
       confusable: ["ghunnah"] },
 
@@ -117,8 +119,8 @@ window.TAJWEED = {
       summary: { en: "A qalqalah letter with sukun in the middle of a word or phrase gets a light bounce.",
                  ar: "تكون في حرف القلقلة الساكن سكونًا أصليًا في وسط الكلمة أو آخرها وصلًا، وهي أقل مراتبها." },
       letters: "ق ط ب ج د",
-      how: { en: "Let the letter echo briefly without adding a vowel. It shouldn't turn into a fatha, kasra or damma.",
-             ar: "يُنبر الحرف نبرة خفيفة دون أن يُتبع بحركة." },
+      how: { en: "Let the letter echo briefly without adding a full vowel. The preferred view is that the echo leans slightly toward the vowel before it.",
+             ar: "يُنبر الحرف نبرة خفيفة دون أن يُتبع بحركة كاملة، والأرجح أن صوت القلقلة تابع لحركة ما قبله." },
       examples: ["يَ{قْ}طَعُونَ", "يَ{جْ}عَلُونَ", "قَ{بْ}لِ", "يَ{دْ}خُلُونَ", "أَ{طْ}وَارًا"],
       confusable: ["qalqalah_kubra"] },
 
@@ -138,7 +140,7 @@ window.TAJWEED = {
       letters: "اللَّه",
       how: { en: "Raise the back of the tongue and give it a full, round sound.",
              ar: "يُرفع أقصى اللسان فيمتلئ الفم بصدى الحرف." },
-      examples: ["قَالَ {اللَّهُ}", "عَبْدُ {اللَّهِ}", "نَصْرُ {اللَّهِ}", "رَسُولُ {اللَّهِ}"],
+      examples: ["قَالَ {اللَّهُ}", "عَبْدُ {اللَّهِ}", "نَصْرُ {اللَّهِ}", "رَسُولُ {اللَّهِ}", "مِنَ {اللَّهِ}"],
       confusable: ["lam_jalalah_tarqeeq"] },
 
     { id: "lam_jalalah_tarqeeq", cat: "lam", name: { en: "Lam of Allah: Light", ar: "ترقيق لام لفظ الجلالة" },
@@ -147,7 +149,7 @@ window.TAJWEED = {
       letters: "اللَّه",
       how: { en: "Keep the tongue low and say it lightly, like the lam in لِ.",
              ar: "تُنطق اللام رقيقة دون تفخيم." },
-      examples: ["بِسْمِ {اللَّهِ}", "لِ{لَّهِ}", "بِ{اللَّهِ}", "مِنَ {اللَّهِ}"],
+      examples: ["بِسْمِ {اللَّهِ}", "لِ{لَّهِ}", "بِ{اللَّهِ}", "سَبِيلِ {اللَّهِ}"],
       confusable: ["lam_jalalah_tafkheem"] },
 
     { id: "lam_qamariyyah", cat: "lam", name: { en: "Lam Qamariyyah (clear)", ar: "اللام القمرية" },
@@ -177,7 +179,7 @@ window.TAJWEED = {
       letters: "ا و ي",
       how: { en: "Two counts, no more and no less. Every other madd builds on this one.",
              ar: "حركتان لا يزيد ولا ينقص، وهو أصل المدود." },
-      examples: ["{قَا}لَ", "{قِي}لَ", "يَ{قُو}لُ", "{نُو}حِي{هَا}"],
+      examples: ["{قَا}لَ", "{قِي}لَ", "يَ{قُو}لُ", "{نُو}دِيَ"],
       confusable: ["madd_arid"] },
 
     { id: "madd_muttasil", cat: "madd", name: { en: "Madd Muttasil (obligatory)", ar: "المد الواجب المتصل" },
@@ -193,8 +195,8 @@ window.TAJWEED = {
       summary: { en: "A madd letter at the end of one word and a hamza at the start of the next. Usually lengthened 4 or 5 harakat.",
                  ar: "أن يأتي حرف المد في آخر كلمة والهمز في أول الكلمة التالية، ويُمد أربع أو خمس حركات." },
       letters: "ا و ي … ء",
-      how: { en: "Stay consistent: use the same length you chose for muttasil. If you stop on the first word, it becomes a natural madd of 2.",
-             ar: "يُلتزم فيه بالمقدار نفسه، وإذا وُقف على الكلمة الأولى صار مدًا طبيعيًا." },
+      how: { en: "In Hafs via ash-Shatibiyyah, use the same length you chose for muttasil: 4 and 4, or 5 and 5 (4 is the more common choice). If you stop on the first word, it becomes a natural madd of 2.",
+             ar: "يُمد عند حفص من طريق الشاطبية بمقدار المتصل نفسه: أربعًا وأربعًا أو خمسًا وخمسًا، والأربع مقدَّمة في الأداء. وإذا وُقف على الكلمة الأولى صار مدًا طبيعيًا." },
       examples: ["بِ{مَآ أُ}نزِلَ", "{يَآ أَ}يُّهَا", "{قُوٓا أَ}نفُسَكُمْ", "فِ{يٓ أَ}نفُسِكُمْ"],
       confusable: ["madd_muttasil"] },
 
@@ -208,11 +210,11 @@ window.TAJWEED = {
       confusable: ["madd_tabii", "madd_leen"] },
 
     { id: "madd_lazim", cat: "madd", name: { en: "Madd Lazim (necessary)", ar: "المد اللازم" },
-      summary: { en: "A madd letter followed by a permanent sukun or shaddah, including some letters at the start of surahs. Always 6 harakat.",
-                 ar: "أن يأتي بعد حرف المد سكون أصلي وصلًا ووقفًا، ويُمد ست حركات لزومًا." },
+      summary: { en: "A madd letter followed by a permanent sukun or shaddah, including some letters at the start of surahs. Lengthened 6 harakat.",
+                 ar: "أن يأتي بعد حرف المد سكون أصلي وصلًا ووقفًا، ويُمد ست حركات." },
       letters: "ا و ي + ّ / ْ",
-      how: { en: "Six full counts, every time. This also applies to opening letters such as الٓمٓ (lam and meem are held 6).",
-             ar: "ست حركات دائمًا، ومنه الحروف المقطعة مثل «الٓمٓ»." },
+      how: { en: "Six full counts. This also applies to opening letters such as الٓمٓ (lam and meem are held 6). Two exceptions: the ع of كٓهيعٓصٓ and حمٓ ۝ عٓسٓقٓ may be 6 or 4, and the meem of الٓمٓ ۝ اللَّهُ (Al Imran), read on without stopping, may be 6 or 2.",
+             ar: "يُمد ست حركات، ومنه الحروف المقطعة مثل «الٓمٓ». ويُستثنى: «عين» في أول مريم والشورى يجوز فيها الست والأربع، وميم «الٓمٓ ۝ اللَّهُ» أول آل عمران عند الوصل يجوز فيها الست والحركتان." },
       examples: ["{الضَّآلِّ}ينَ", "{الْحَآقَّ}ةُ", "{دَآبَّ}ةٍ", "{الٓمٓ}"] },
 
     { id: "madd_badal", cat: "madd", name: { en: "Madd Badal", ar: "مد البدل" },
@@ -229,15 +231,15 @@ window.TAJWEED = {
       letters: "ـَوْ ـَيْ + وقف",
       how: { en: "It only exists when you stop. When you continue, there is no lengthening.",
              ar: "لا يكون إلا عند الوقف، وفي الوصل لا مد فيه." },
-      examples: ["خَ{وْفٍ}|", "الْبَ{يْتِ}|", "قُرَ{يْشٍ}|", "الصَّ{يْفِ}|"],
+      examples: ["خَ{وْفٍ}|", "الْبَ{يْتِ}|", "قُرَ{يْشٍ}|", "وَالصَّ{يْفِ}|"],
       confusable: ["madd_arid"] },
 
     { id: "madd_silah", cat: "madd", name: { en: "Madd Silah", ar: "مد الصلة" },
       summary: { en: "The pronoun هُ / هِ between two voweled letters is extended: 2 harakat (sughra), or 4–5 if a hamza follows (kubra).",
                  ar: "مد هاء الضمير الواقعة بين متحركين: الصغرى حركتان، والكبرى أربع أو خمس إذا جاء بعدها همز." },
       letters: "هُۥ هِۦ",
-      how: { en: "The mushaf marks it with a small و or ي after the ha. There is no silah when stopping. The well-known exception is يَرْضَهُ لَكُمْ.",
-             ar: "يُرمز لها بواو أو ياء صغيرة بعد الهاء، ولا صلة عند الوقف." },
+      how: { en: "The mushaf marks it with a small و or ي after the ha. There is no silah when stopping. Silah kubra takes the same length as madd munfasil. Exceptions in Hafs: no silah in يَرْضَهُ لَكُمْ; the ha is sakin in أَرْجِهْ and فَأَلْقِهْ; and فِيهِۦ مُهَانًا does get silah even though a sakin letter comes before the ha.",
+             ar: "يُرمز لها بواو أو ياء صغيرة بعد الهاء، ولا صلة عند الوقف، وتُمد الصلة الكبرى بمقدار المد المنفصل. ويُستثنى عند حفص: «يَرْضَهُ لَكُمْ» بلا صلة، و«أَرْجِهْ» و«فَأَلْقِهْ» بسكون الهاء، و«فِيهِۦ مُهَانًا» بالصلة مع سكون ما قبل الهاء." },
       examples: ["إِنَّ{هُۥ} كَانَ", "بِ{هِۦ} بَصِيرًا", "مَالَ{هُۥٓ أَ}خْلَدَهُ", "عِندَ{هُۥٓ إِ}لَّا"] },
 
     // ---------- Tafkheem / tarqeeq ----------
@@ -250,21 +252,21 @@ window.TAJWEED = {
       examples: ["{خَا}لِدِينَ", "{صِ}رَاطَ", "{ضَ}رَبَ", "{طَ}يِّبًا", "{قَا}لَ", "{ظَ}لَمُوا", "{غَ}فُورٌ"] },
 
     { id: "ra_tafkheem", cat: "tafkheem", name: { en: "Ra: Heavy", ar: "تفخيم الراء" },
-      summary: { en: "Ra is heavy with a fatha or damma, or with a sukun after a fatha or damma.",
-                 ar: "تُفخَّم الراء إذا كانت مفتوحة أو مضمومة، أو ساكنة بعد فتح أو ضم." },
+      summary: { en: "Ra is heavy with a fatha or damma, or with a sukun after a fatha or damma. A sakin ra is also heavy after a kasra that is not original (ارْجِعِي) or in a separate word (أَمِ ارْتَابُوا), and before a heavy letter in the same word (قِرْطَاسٍ).",
+                 ar: "تُفخَّم الراء إذا كانت مفتوحة أو مضمومة، أو ساكنة بعد فتح أو ضم. وتُفخَّم الساكنة كذلك بعد كسر عارض (ارْجِعِي) أو منفصل (أَمِ ارْتَابُوا)، أو إذا جاء بعدها حرف استعلاء في الكلمة نفسها (قِرْطَاسٍ، مِرْصَادًا)." },
       letters: "رَ رُ ـَرْ ـُرْ",
-      how: { en: "Round the sound and let it fill the mouth. Don't roll the ra (no repeated trill).",
-             ar: "يمتلئ الفم بصداها مع الحذر من تكرارها." },
-      examples: ["{رَ}بِّ", "{رُ}سُلُ", "مَ{رْ}يَمَ", "الْقُ{رْ}آنُ"],
+      how: { en: "Round the sound and let it fill the mouth. Don't roll the ra (no repeated trill). When stopping on a ra, it is heavy if the letter before it has a fatha or damma, or is sakin (other than ya) after a fatha or damma: الْقَدْرْ، الْفَجْرْ. In فِرْقٍ both ways are allowed.",
+             ar: "يمتلئ الفم بصداها مع الحذر من تكرارها. وعند الوقف تُفخَّم إذا سبقها فتح أو ضم، أو ساكن غير الياء قبله فتح أو ضم: الْقَدْرْ، الْفَجْرْ. ويجوز الوجهان في «فِرْقٍ»." },
+      examples: ["{رَ}بِّ", "{رُ}سُلُ", "مَ{رْ}يَمَ", "الْقُ{رْ}آنُ", "ا{رْ}جِعِي", "قِ{رْ}طَاسٍ", "مِ{رْ}صَادًا", "الْفَجْ{رِ}|"],
       confusable: ["ra_tarqeeq"] },
 
     { id: "ra_tarqeeq", cat: "tafkheem", name: { en: "Ra: Light", ar: "ترقيق الراء" },
-      summary: { en: "Ra is light with a kasra, or with a sukun after a kasra (when no heavy letter follows in the same word).",
-                 ar: "تُرقَّق الراء إذا كانت مكسورة، أو ساكنة بعد كسر أصلي وليس بعدها حرف استعلاء في الكلمة نفسها." },
+      summary: { en: "Ra is light with a kasra, or with a sukun after an original kasra in the same word when no heavy letter follows it in that word.",
+                 ar: "تُرقَّق الراء إذا كانت مكسورة، أو ساكنة بعد كسر أصلي متصل وليس بعدها حرف استعلاء في الكلمة نفسها." },
       letters: "رِ ـِرْ",
-      how: { en: "Keep the tongue low and say it lightly, as in the English word \"read\".",
-             ar: "تُنطق الراء رقيقة دون أن يمتلئ الفم بصداها." },
-      examples: ["{رِ}جَالٌ", "فِ{رْ}عَوْنَ", "{رِ}زْقًا", "مِ{رْ}يَةٍ"],
+      how: { en: "Keep the tongue low and say it lightly, without filling the mouth. When stopping on a ra, it is light after a kasra, after a sakin letter that follows a kasra (الذِّكْرْ), or after a sakin ya (خَيْرْ، قَدِيرْ). A heavy letter in the next word doesn't change it: أَنذِرْ قَوْمَكَ.",
+             ar: "تُنطق الراء رقيقة دون أن يمتلئ الفم بصداها. وعند الوقف تُرقَّق إذا سبقها كسر، أو ساكن قبله كسر (الذِّكْرْ)، أو ياء ساكنة (خَيْرْ، قَدِيرْ). ولا يؤثر حرف الاستعلاء في الكلمة التالية: أَنذِرْ قَوْمَكَ." },
+      examples: ["{رِ}جَالٌ", "فِ{رْ}عَوْنَ", "{رِ}زْقًا", "مِ{رْ}يَةٍ", "الذِّكْ{رِ}|", "قَدِي{رٌ}|"],
       confusable: ["ra_tafkheem"] }
   ]
 };

@@ -121,3 +121,5 @@ td { padding: .45rem .3rem; border-top: 1px solid var(--line); }
 .bk-msg { min-height: 1.4em; margin: .8rem 0 0; font-size: .9rem; }
 .bk-msg.ok { color: var(--ok); }
 .bk-msg.bad { color: var(--bad); }
+footer p { margin: .3rem 0; }
+footer .sources a { font-family: var(--ar-font); font-size: 1.05em; }
