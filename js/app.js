@@ -1,6 +1,7 @@
 (function () {
   "use strict";
   const { categories, rules } = window.TAJWEED;
+  const letterWord = Object.fromEntries(window.TAJWEED.letterWords || []);   // letter -> Quran word to hear it in
   const ruleById = Object.fromEntries(rules.map(r => [r.id, r]));
   const catById = Object.fromEntries(categories.map(c => [c.id, c]));
   const KEY = "tajweed.v1";
@@ -81,7 +82,7 @@
     } else go();
   }
   document.addEventListener("click", e => {
-    const b = e.target.closest("button.play");
+    const b = e.target.closest("button[data-ex]");
     if (b) { e.preventDefault(); playClip(b.dataset.ex, b); }
   });
   window.addEventListener("hashchange", stopClip);
@@ -159,6 +160,12 @@
           </header>
           <p>${esc(L(r.summary))}</p>
           <div class="kv"><span>${t("letters")}</span><span class="ar letters" lang="ar">${esc(r.letters)}</span></div>
+          ${r.quizLetters ? `<div class="kv"><span>${t("hearLetters")}</span><span class="lchips">${r.quizLetters.split(" ").map(l => {
+            const w = letterWord[l];
+            return w && AUDIO.clips[w]
+              ? `<button class="lchip ar" type="button" lang="ar" data-ex="${esc(w)}" title="${esc(w.replace(/[{}|]/g, ""))}">${esc(l)}</button>`
+              : `<span class="lchip ar" lang="ar">${esc(l)}</span>`;
+          }).join("")}</span></div>` : ""}
           <div class="kv"><span>${t("howTo")}</span><span class="how">${esc(L(r.how))}</span></div>
           <h3>${t("examples")}</h3>
           <div class="examples">${r.examples.map(e => `<div class="ex">${renderAr(e, c.color, { ref: true })}</div>`).join("")}</div>
@@ -274,7 +281,8 @@
     const prompt = q.type === "ex"
       ? `<p class="qtext">${t("qExample")}</p><div class="qar">${renderAr(q.ex, catColor(r))}</div>`
       : q.type === "sound"
-      ? `<p class="qtext">${esc(L(catById[r.cat].question))}</p><div class="qar"><span class="ar hl qletter" lang="ar" dir="rtl" style="color:${catColor(r)}">${esc(q.letter)}</span></div>`
+      ? `<p class="qtext">${esc(L(catById[r.cat].question))}</p><div class="qar"><div class="ar qletter" lang="ar" dir="rtl" style="color:${catColor(r)}">${esc(q.letter)}</div>${
+          letterWord[q.letter] ? `<div class="qword" title="${t("asIn")}">${renderAr(letterWord[q.letter], catColor(r))}</div>` : ""}</div>`
       : `<p class="qtext">${t("qLetterTitle")}</p><div class="qar"><span class="ar" lang="ar" dir="rtl">${esc(q.prefix)} <span class="plus">+</span> <span class="hl" style="color:${catColor(r)}">${esc(q.letter)}</span></span></div>`;
     app.innerHTML = `
       <div class="qhead"><span>${t("question")} ${quiz.i + 1} ${t("of")} ${quiz.qs.length}</span>

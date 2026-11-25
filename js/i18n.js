@@ -29,7 +29,7 @@ window.I18N = {
     backupConfirm: "Replace the progress in this browser with the loaded progress?",
     backupLoaded: "Progress loaded.",
     sourcesLabel: "Main reference:", sourcesNote: "Quran examples checked against the tanzil.net text. Audio: Sheikh Mahmoud Khalil al-Husary (Hafs), via everyayah.com and quran.com.",
-    listen: "Listen (al-Husary)", audioError: "The audio couldn't load. Check your internet connection.",
+    listen: "Listen (al-Husary)", hearLetters: "Hear each letter", asIn: "as in", audioError: "The audio couldn't load. Check your internet connection.",
     openLesson: "Open lesson", footer: "Rules follow the riwayah of Hafs 'an 'Asim. Always confirm your recitation with a qualified teacher."
   },
   ar: {
@@ -62,7 +62,7 @@ window.I18N = {
     backupConfirm: "هل تريد استبدال التقدّم في هذا المتصفح بالتقدّم المحمَّل؟",
     backupLoaded: "تم تحميل التقدّم.",
     sourcesLabel: "المرجع الأساسي:", sourcesNote: "وروجعت الأمثلة القرآنية على نص موقع تنزيل. والتلاوة بصوت الشيخ محمود خليل الحصري (حفص)، عبر موقعي everyayah.com و quran.com.",
-    listen: "استمع (الحصري)", audioError: "تعذّر تحميل الصوت. تحقّق من اتصالك بالإنترنت.",
+    listen: "استمع (الحصري)", hearLetters: "استمع إلى كل حرف", asIn: "كما في", audioError: "تعذّر تحميل الصوت. تحقّق من اتصالك بالإنترنت.",
     openLesson: "افتح الدرس", footer: "الأحكام على رواية حفص عن عاصم. اعرض تلاوتك دائمًا على معلّم متقن."
   }
 };

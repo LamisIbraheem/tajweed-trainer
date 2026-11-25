@@ -69,6 +69,8 @@ sub find_seq {
 my $src = slurp($datajs); utf8::decode($src);
 my @examples;
 while ($src =~ /examples:\s*\[(.*?)\]/gs) { my $list = $1; push @examples, $1 while $list =~ /"((?:[^"\\]|\\.)*)"/g; }
+# Words used to hear single letters (Makharij / Sifat): the strings with a {highlight}.
+if ($src =~ /letterWords:\s*\[(.*?)\n\s*\],/s) { my $list = $1; while ($list =~ /"((?:[^"\\]|\\.)*)"/g) { push @examples, $1 if index($1, '{') >= 0; } }
 my %seen; @examples = grep { !$seen{$_}++ } @examples;
 
 my $q = decode_json(slurp($qjson));
@@ -84,34 +86,52 @@ for my $ex (@examples) {
   my $stop = $ex =~ /\|$/ ? 1 : 0;
   my @et = split / /, norm($ex);
   my @vet = split / /, norm($ex, 1);
-  my ($hit, $range);
-  # Best-quality match anywhere in the Quran, first with vowels, then on bare letters; earliest ayah wins a tie.
+  # Candidate ayahs: the best-quality matches, first with vowels, then on bare letters, in mushaf order.
+  my @cands;
   for my $pass (['vtok', \@vet], ['tok', \@et]) {
     my ($field, $pat) = @$pass;
+    my $best = 0; my @c;
     for my $ay (@ayahs) {
       my @r = find_seq($ay->{$field}, $pat, $stop);
-      if (@r && (!$range || $r[2] > $range->[2])) { ($hit, $range) = ($ay, \@r); last if $r[2] == 3; }
+      next unless @r;
+      if ($r[2] > $best) { $best = $r[2]; @c = (); }
+      push @c, [$ay, \@r] if $r[2] == $best && @c < 6;
     }
-    last if $range && $range->[2] >= 2;
+    @cands = @c if @c && (!@cands || $best >= 2);
+    last if $best >= 2;
   }
-  unless ($hit) { push @fail, "$ex (no ayah)"; next; }
+  unless (@cands) { push @fail, "$ex (no ayah)"; next; }
+  # Take the first candidate whose word timing looks sound (some timings are clipped too short).
+  my ($chosen, $why);
+  for my $cand (@cands) {
+    my $c = clip_for($cand->[0], $cand->[1], \@et, $stop) or next;
+    $chosen //= $c;   # fallback: first usable clip
+    if ($c->[2] - $c->[1] >= 350) { $chosen = $c; last; }
+  }
+  unless ($chosen) { push @fail, "$ex ($cands[0][0]{key}: no word match or timing)"; next; }
+  $map{$ex} = $chosen;
+  printf "%-28s %-7s %d-%dms\n", $ex, $chosen->[3], $chosen->[1], $chosen->[2];
+}
+
+# Clip [file, start, end, key] for a match in one ayah, using quran.com's word list and timings.
+sub clip_for {
+  my ($hit, $range, $et, $stop) = @_;
   # Word positions in quran.com's own word list (a word can hold two tokens, e.g. يا ايها).
   my $v = fetch_json("https://api.quran.com/api/v4/verses/by_key/$hit->{key}?words=true&word_fields=text_imlaei_simple", "v_$hit->{s}_$hit->{a}.json");
   my (@qt, @qpos);
   for my $w (@{$v->{verse}{words}}) { next unless $w->{char_type_name} eq 'word'; for my $t (split / /, norm($w->{text_imlaei_simple})) { push @qt, $t; push @qpos, $w->{position}; } }
-  my @r = find_seq(\@qt, \@et, $stop);
+  my @r = find_seq(\@qt, $et, $stop);
   # quran.com's simple spelling sometimes differs (ذالك، الرحمان); when both texts split the ayah
   # into the same number of words, reuse the position found in the tanzil text.
   @r = @$range[0, 1] if !@r && @qt == @{$hit->{tok}};
-  unless (@r) { push @fail, "$ex ($hit->{key}: no word match)"; next; }
+  return undef unless @r;
   my ($w1, $w2) = ($qpos[$r[0]], $qpos[$r[1]]);
   my $rec = fetch_json("https://api.quran.com/api/v4/recitations/6/by_ayah/$hit->{key}?fields=segments", "r_$hit->{s}_$hit->{a}.json");
   my $af = $rec->{audio_files}[0];
   my %seg = map { $_->[1] => $_ } @{$af->{segments} || []};
-  unless ($seg{$w1} && $seg{$w2}) { push @fail, "$ex ($hit->{key}: no timing for words $w1-$w2)"; next; }
+  return undef unless $seg{$w1} && $seg{$w2};
   (my $file = $af->{url}) =~ s{^.*/}{};
-  $map{$ex} = [$file, $seg{$w1}[2], $seg{$w2}[3], $hit->{key}];
-  printf "%-28s %-7s w%d-%d %d-%dms\n", $ex, $hit->{key}, $w1, $w2, $seg{$w1}[2], $seg{$w2}[3];
+  return [$file, $seg{$w1}[2], $seg{$w2}[3], $hit->{key}];
 }
 
 my $json = JSON::PP->new->canonical->utf8(0);
