@@ -476,7 +476,23 @@
     else if (parts[0] === "progress") viewProgress();
     else viewHome();
     if (!focus) window.scrollTo(0, 0);
+    countPage("#/" + parts.join("/"));
   }
+
+  // ---------- visitor counter (GoatCounter) ----------
+  // The site uses #/ routes, which GoatCounter can't see on its own, so each page is counted here
+  // as e.g. /tajweed-trainer/#/lesson/noon (quiz settings and scroll targets are left out).
+  // GoatCounter itself ignores localhost, so local testing isn't counted.
+  let lastCounted = null, pendingPage = null;
+  function countPage(page) {
+    const path = location.pathname + page;
+    const gc = window.goatcounter;
+    if (!gc || !gc.count) { pendingPage = path; return; }   // script not loaded yet
+    if (path === lastCounted) return;
+    lastCounted = path;
+    try { gc.count({ path, title: document.title }); } catch (e) { /* counting must never break the app */ }
+  }
+  window.addEventListener("load", () => { if (pendingPage) { const p = pendingPage; pendingPage = null; countPage(p.slice(location.pathname.length)); } });
 
   // In Arabic, show Arabic-Indic digits (٠١٢…) and the Arabic percent sign in all rendered text.
   const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
