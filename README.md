@@ -14,6 +14,8 @@ No installs are needed. Fonts load from Google Fonts when online and fall back t
 
 ## Features (v1)
 - **Lessons:** 7 rule groups and 26 rules (Noon sakinah/tanween, Meem sakinah, Ghunnah, Qalqalah, Lam rules, Madd, Tafkheem/Tarqeeq). Each rule has its letters, how to recite it, and colour-highlighted examples. A "stop" badge marks examples read while stopping (waqf).
+- **More chapters from the book:** Isti'adha & Basmala (lesson only), the sakin lams (verb, هل/بل, noun, command), Hamzat al-Wasl (examples start an ayah, marked `^`), the two meeting letters (mithlayn, mutajanisayn, mutaqaribayn, mutaba'idayn), how to stop (alif, ha, sukun, rawm & ishmam) and the stop signs.
+- **Report a mistake:** every rule and quiz answer links to a pre-filled GitHub issue. **Printable copy** (`#/print`): all content in English and Arabic with surah:ayah and review boxes, for a teacher to check.
 - **Makharij & Sifat:** the 17 makharij in 5 areas and the 20 sifat, following *Ghayat al-Murid fi 'Ilm al-Tajwid* ('Atiyya Qabil Nasr). Their quizzes show one letter and ask where it comes from or which characteristic it has; the choices never include another answer that is also true for that letter.
 - **Audio:** every example has a ▶ button that plays just those words from Sheikh Mahmoud Khalil al-Husary's recitation (Hafs, murattal), streamed from everyayah.com using quran.com's word timings. In quizzes press **P** to play. Needs an internet connection.
 - **Letter audio (Makharij & Sifat):** each letter has a button that plays it inside one Quran word, with sukun wherever possible (`letterWords` in `data.js`); the single-letter quiz questions show and play that word too.

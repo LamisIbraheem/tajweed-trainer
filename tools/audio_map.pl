@@ -13,7 +13,7 @@ use Unicode::Normalize qw(NFD);
 sub norm {
   my ($s, $keep_vowels) = @_;
   $s = NFD($s);   # same order for stacked marks (shaddah + fatha typed either way)
-  $s =~ s/[{}|]//g;
+  $s =~ s/[{}|^]//g;
   if ($keep_vowels) {
     # Keep fatha/damma/kasra, tanween and shaddah (homographs like تَبَّتْ / تُبْتُ differ only here);
     # drop sukun, dagger alif, Quranic annotation marks and tatweel, whose use varies between texts.
@@ -34,9 +34,10 @@ sub fetch_json {
 # Match example tokens inside an ayah's tokens. Returns (start, end) token indices or ().
 # The first example token may follow a prefix (و ف ب ل…); the last may be followed by a suffix.
 sub find_seq {
-  my ($ayah, $ex, $want_end) = @_;
+  my ($ayah, $ex, $want_end, $want_start) = @_;
   my @hits;
   for my $i (0 .. @$ayah - @$ex) {
+    next if $want_start && $i != 0;   # "^" examples must open the ayah (read when starting)
     my $ok = 1;
     for my $k (0 .. $#$ex) {
       my ($a, $e) = ($ayah->[$i + $k], $ex->[$k]);
@@ -77,13 +78,21 @@ my $q = decode_json(slurp($qjson));
 my @ayahs;
 for my $s (@{$q->{data}{surahs}}) { for my $a (@{$s->{ayahs}}) {
   my $t = $a->{text}; $t =~ s/^\x{FEFF}//;
+  # The tanzil text puts the basmala at the start of ayah 1 of every surah except al-Fatiha and at-Tawbah;
+  # it isn't part of that ayah (or its recording), so drop it.
+  if ($a->{numberInSurah} == 1 && $s->{number} != 1 && $s->{number} != 9) {
+    my @w = split / /, $t;
+    splice(@w, 0, 4) if @w > 4 && norm(join(' ', @w[0 .. 3])) eq norm("\x{0628}\x{0633}\x{0645} \x{0627}\x{0644}\x{0644}\x{0647} \x{0627}\x{0644}\x{0631}\x{062D}\x{0645}\x{0646} \x{0627}\x{0644}\x{0631}\x{062D}\x{064A}\x{0645}");
+    $t = join(' ', @w);
+  }
   push @ayahs, { key => "$s->{number}:$a->{numberInSurah}", s => $s->{number}, a => $a->{numberInSurah},
                  tok => [split / /, norm($t)], vtok => [split / /, norm($t, 1)] };
 }}
 
 my (%map, @fail);
 for my $ex (@examples) {
-  my $stop = $ex =~ /\|$/ ? 1 : 0;
+  my $stop = $ex =~ /\|$/ ? 1 : 0;     # "…|": read when stopping, so it must end an ayah
+  my $start = $ex =~ /^\^/ ? 1 : 0;    # "^…": read when starting, so it must open an ayah
   my @et = split / /, norm($ex);
   my @vet = split / /, norm($ex, 1);
   # Candidate ayahs: the best-quality matches, first with vowels, then on bare letters, in mushaf order.
@@ -92,7 +101,7 @@ for my $ex (@examples) {
     my ($field, $pat) = @$pass;
     my $best = 0; my @c;
     for my $ay (@ayahs) {
-      my @r = find_seq($ay->{$field}, $pat, $stop);
+      my @r = find_seq($ay->{$field}, $pat, $stop, $start);
       next unless @r;
       if ($r[2] > $best) { $best = $r[2]; @c = (); }
       push @c, [$ay, \@r] if $r[2] == $best && @c < 6;
@@ -104,7 +113,7 @@ for my $ex (@examples) {
   # Take the first candidate whose word timing looks sound (some timings are clipped too short).
   my ($chosen, $why);
   for my $cand (@cands) {
-    my $c = clip_for($cand->[0], $cand->[1], \@et, $stop) or next;
+    my $c = clip_for($cand->[0], $cand->[1], \@et, $stop, $start) or next;
     $chosen //= $c;   # fallback: first usable clip
     if ($c->[2] - $c->[1] >= 350) { $chosen = $c; last; }
   }
@@ -115,12 +124,12 @@ for my $ex (@examples) {
 
 # Clip [file, start, end, key] for a match in one ayah, using quran.com's word list and timings.
 sub clip_for {
-  my ($hit, $range, $et, $stop) = @_;
+  my ($hit, $range, $et, $stop, $start) = @_;
   # Word positions in quran.com's own word list (a word can hold two tokens, e.g. يا ايها).
   my $v = fetch_json("https://api.quran.com/api/v4/verses/by_key/$hit->{key}?words=true&word_fields=text_imlaei_simple", "v_$hit->{s}_$hit->{a}.json");
   my (@qt, @qpos);
   for my $w (@{$v->{verse}{words}}) { next unless $w->{char_type_name} eq 'word'; for my $t (split / /, norm($w->{text_imlaei_simple})) { push @qt, $t; push @qpos, $w->{position}; } }
-  my @r = find_seq(\@qt, $et, $stop);
+  my @r = find_seq(\@qt, $et, $stop, $start);
   # quran.com's simple spelling sometimes differs (ذالك، الرحمان); when both texts split the ayah
   # into the same number of words, reuse the position found in the tanzil text.
   @r = @$range[0, 1] if !@r && @qt == @{$hit->{tok}};

@@ -29,6 +29,12 @@ window.I18N = {
     backupConfirm: "Replace the progress in this browser with the loaded progress?",
     backupLoaded: "Progress loaded.",
     sourcesLabel: "Main reference:", sourcesNote: "Quran examples checked against the tanzil.net text. Audio: Sheikh Mahmoud Khalil al-Husary (Hafs), via everyayah.com and quran.com.",
+    reportGeneral: "Report a mistake", startBadge: "start",
+    reportMistake: "Report a mistake in this rule", reportQuestion: "Report a problem with this question",
+    printCopy: "Printable copy for teacher review", printTitle: "Tajweed Trainer: full content for review",
+    printIntro: "Every rule, explanation and example on the site, in English and Arabic, with the surah:ayah of each example. Please mark each rule and note any corrections.",
+    printBtn: "Print / save as PDF", printOk: "Correct", printFix: "Needs correction", printNotes: "Notes:",
+    printRef: "Reference:", reviewer: "Reviewed by:", reviewDate: "Date:",
     listen: "Listen (al-Husary)", hearLetters: "Hear each letter", asIn: "as in", audioError: "The audio couldn't load. Check your internet connection.",
     openLesson: "Open lesson", footer: "Rules follow the riwayah of Hafs 'an 'Asim. Always confirm your recitation with a qualified teacher."
   },
@@ -62,6 +68,12 @@ window.I18N = {
     backupConfirm: "هل تريد استبدال التقدّم في هذا المتصفح بالتقدّم المحمَّل؟",
     backupLoaded: "تم تحميل التقدّم.",
     sourcesLabel: "المرجع الأساسي:", sourcesNote: "وروجعت الأمثلة القرآنية على نص موقع تنزيل. والتلاوة بصوت الشيخ محمود خليل الحصري (حفص)، عبر موقعي everyayah.com و quran.com.",
+    reportGeneral: "الإبلاغ عن خطأ", startBadge: "ابتداء",
+    reportMistake: "الإبلاغ عن خطأ في هذا الحكم", reportQuestion: "الإبلاغ عن مشكلة في هذا السؤال",
+    printCopy: "نسخة للطباعة لمراجعة المعلّم", printTitle: "معلّم التجويد: المحتوى كاملًا للمراجعة",
+    printIntro: "جميع الأحكام والشروح والأمثلة في الموقع بالعربية والإنجليزية، مع رقم السورة والآية لكل مثال. يُرجى تقييم كل حكم وتدوين أي تصحيح.",
+    printBtn: "اطبع / احفظ PDF", printOk: "صحيح", printFix: "يحتاج إلى تصحيح", printNotes: "ملاحظات:",
+    printRef: "المرجع:", reviewer: "المراجِع:", reviewDate: "التاريخ:",
     listen: "استمع (الحصري)", hearLetters: "استمع إلى كل حرف", asIn: "كما في", audioError: "تعذّر تحميل الصوت. تحقّق من اتصالك بالإنترنت.",
     openLesson: "افتح الدرس", footer: "الأحكام على رواية حفص عن عاصم. اعرض تلاوتك دائمًا على معلّم متقن."
   }

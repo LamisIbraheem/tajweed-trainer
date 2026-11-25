@@ -17,6 +17,25 @@
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 
   const t = k => I18N[state.lang][k];
+
+  // "Report a mistake": opens a pre-filled GitHub issue on the project (needs a free GitHub account).
+  const ISSUES_URL = "https://github.com/LamisIbraheem/tajweed-trainer/issues/new";
+  function reportUrl(r, example) {
+    const page = `${location.origin}${location.pathname}#/lesson/${r.cat}#${r.id}`;
+    const title = `Mistake in: ${r.name.en} (${r.name.ar})`;
+    const body = [
+      `**Rule:** ${r.name.en} / ${r.name.ar} (\`${r.id}\`)`,
+      ...(example ? [`**Example / question:** ${example.replace(/[{}|^]/g, "")}`] : []),
+      `**Page:** ${page}`,
+      "",
+      "**What is wrong? / ما الخطأ؟**",
+      "",
+      "",
+      "**What should it be (and your source, if any)? / ما الصواب؟ (مع المصدر إن وُجد)**",
+      ""
+    ].join("\n");
+    return `${ISSUES_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+  }
   const L = obj => obj[state.lang] || obj.en;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -42,13 +61,16 @@
   // ---------- rendering helpers ----------
   function renderAr(text, color, opts = {}) {
     const key = text;
-    let stop = false;
+    let stop = false, start = false;
     if (text.endsWith("|")) { stop = true; text = text.slice(0, -1); }
+    // A leading "^" marks an example read when starting (e.g. hamzat al-wasl); it comes from the start of an ayah.
+    if (text.startsWith("^")) { start = true; text = text.slice(1); }
     const html = esc(text).replace(/\{([^}]*)\}/g, (_, m) => `<span class="hl" style="color:${color}">${m}</span>`);
     const clip = AUDIO.clips[key];
     return `<span class="ar" lang="ar" dir="rtl">${html}</span>` + (stop ? ` <span class="stop" title="waqf">${t("stopBadge")}</span>` : "")
-      + (clip ? ` <button class="play" type="button" data-ex="${esc(key)}" title="${t("listen")}" aria-label="${t("listen")}">▶</button>`
-          + (opts.ref ? ` <small class="ref muted" dir="ltr">${clip[3]}</small>` : "") : "");
+      + (start ? ` <span class="stop" title="ibtida'">${t("startBadge")}</span>` : "")
+      + (clip && !opts.noPlay ? ` <button class="play" type="button" data-ex="${esc(key)}" title="${t("listen")}" aria-label="${t("listen")}">▶</button>` : "")
+      + (clip && opts.ref ? ` <small class="ref muted" dir="ltr">${clip[3]}</small>` : "");
   }
 
   // ---------- audio (al-Husary, played word-accurate from the full-ayah recording) ----------
@@ -167,11 +189,12 @@
               : `<span class="lchip ar" lang="ar">${esc(l)}</span>`;
           }).join("")}</span></div>` : ""}
           <div class="kv"><span>${t("howTo")}</span><span class="how">${esc(L(r.how))}</span></div>
-          <h3>${t("examples")}</h3>
-          <div class="examples">${r.examples.map(e => `<div class="ex">${renderAr(e, c.color, { ref: true })}</div>`).join("")}</div>
+          ${r.examples.length ? `<h3>${t("examples")}</h3>
+          <div class="examples">${r.examples.map(e => `<div class="ex">${renderAr(e, c.color, { ref: true, noPlay: r.noAudio })}</div>`).join("")}</div>` : ""}
+          <a class="report" href="${reportUrl(r)}" target="_blank" rel="noopener">⚑ ${t("reportMistake")}</a>
         </article>`).join("")}
       <div class="row">
-        <a class="btn" href="#/quiz?cats=${c.id}">${t("practiceCat")}</a>
+        ${c.quiz !== "none" ? `<a class="btn" href="#/quiz?cats=${c.id}">${t("practiceCat")}</a>` : ""}
         ${nextCat ? `<a class="btn ghost" href="#/lesson/${nextCat.id}">${esc(L(nextCat.name))} →</a>` : ""}
       </div>`;
     app.querySelectorAll("[data-learn]").forEach(b => b.onclick = () => {
@@ -234,9 +257,15 @@
     if (r.id === "ghunnah") { banned.add("idgham_g"); banned.add("idgham_shafawi"); }
     if (r.id === "madd_arid") banned.add("madd_tabii");
     if (r.id === "madd_tabii") banned.add("madd_arid");
-    const same = shuffle(rules.filter(x => x.cat === r.cat && !banned.has(x.id)));
+    // Groups that describe the same text from another angle (e.g. قُل رَّبِّ is both "lam of a verb" and
+    // "mutaqaribayn") list each other in exclusiveWith, so one is never offered as a wrong answer for the other.
+    const clash = x => {
+      const a = catById[r.cat], b = catById[x.cat];
+      return (a.exclusiveWith || []).includes(b.id) || (b.exclusiveWith || []).includes(a.id);
+    };
+    const same = shuffle(rules.filter(x => x.cat === r.cat && !banned.has(x.id) && (x.group || "") === (r.group || "")));
     const close = shuffle((r.confusable || []).map(id => ruleById[id]).filter(x => x && !banned.has(x.id)));
-    const other = shuffle(rules.filter(x => x.cat !== r.cat && !banned.has(x.id) && catById[x.cat].quiz !== "letters"));
+    const other = shuffle(rules.filter(x => x.cat !== r.cat && !banned.has(x.id) && !catById[x.cat].quiz && !clash(x)));   // only rule groups quizzed by example
     const out = [];
     [...close, ...same, ...other].forEach(x => { if (out.length < 3 && !out.includes(x.id)) out.push(x.id); });
     return shuffle([ruleId, ...out]);
@@ -244,15 +273,16 @@
 
   function viewQuizSetup(params) {
     setNav("quiz");
-    const pre = params.get("cats") ? params.get("cats").split(",") : categories.map(c => c.id);
+    const quizCats = categories.filter(c => c.quiz !== "none");   // lesson-only groups (e.g. isti'adha) have no quiz
+    const pre = params.get("cats") ? params.get("cats").split(",") : quizCats.map(c => c.id);
     const mode = params.get("mode") || "mixed";
     app.innerHTML = `
       <h1>${t("quizSetup")}</h1>
       <div class="card">
         <h3>${t("chooseCats")}</h3>
         <div class="chips">
-          <label class="chip"><input type="checkbox" id="allc" ${pre.length === categories.length ? "checked" : ""}> ${t("allCats")}</label>
-          ${categories.map(c => `<label class="chip" style="--c:${c.color}"><input type="checkbox" name="cat" value="${c.id}" ${pre.includes(c.id) ? "checked" : ""}> ${esc(L(c.name))}</label>`).join("")}
+          <label class="chip"><input type="checkbox" id="allc" ${quizCats.every(c => pre.includes(c.id)) ? "checked" : ""}> ${t("allCats")}</label>
+          ${quizCats.map(c => `<label class="chip" style="--c:${c.color}"><input type="checkbox" name="cat" value="${c.id}" ${pre.includes(c.id) ? "checked" : ""}> ${esc(L(c.name))}</label>`).join("")}
         </div>
         <h3>${t("length")}</h3>
         <div class="chips">${[5, 10, 20].map(n => `<label class="chip"><input type="radio" name="len" value="${n}" ${n === 10 ? "checked" : ""}> ${n}</label>`).join("")}</div>
@@ -279,7 +309,7 @@
   function viewQuestion() {
     const q = quiz.qs[quiz.i], r = ruleById[q.rule];
     const prompt = q.type === "ex"
-      ? `<p class="qtext">${t("qExample")}</p><div class="qar">${renderAr(q.ex, catColor(r))}</div>`
+      ? `<p class="qtext">${t("qExample")}</p><div class="qar">${renderAr(q.ex, catColor(r), { noPlay: r.noAudio })}</div>`
       : q.type === "sound"
       ? `<p class="qtext">${esc(L(catById[r.cat].question))}</p><div class="qar"><div class="ar qletter" lang="ar" dir="rtl" style="color:${catColor(r)}">${esc(q.letter)}</div>${
           letterWord[q.letter] ? `<div class="qword" title="${t("asIn")}">${renderAr(letterWord[q.letter], catColor(r))}</div>` : ""}</div>`
@@ -309,6 +339,7 @@
           <p>${esc(L(r.summary))}</p>
           <div class="row"><button class="btn" id="nextq">${last ? t("finish") : t("next")}</button>
           <a class="btn ghost" href="#/lesson/${r.cat}#${r.id}" target="_self">${t("openLesson")}</a></div>
+          <a class="report" href="${reportUrl(r, q.type === "ex" ? q.ex : q.type === "sound" ? q.letter : q.prefix + " + " + q.letter)}" target="_blank" rel="noopener">⚑ ${t("reportQuestion")}</a>
         </div>`;
       app.querySelector("#nextq").focus();
       app.querySelector("#nextq").onclick = () => { stopClip(); quiz.answered = false; quiz.i++; last ? viewResults() : viewQuestion(); };
@@ -462,6 +493,36 @@
     } catch (e) { return null; }
   }
 
+  // ---------- printable copy for teacher review ----------
+  function viewPrint() {
+    setNav("");
+    const both = (o, cls = "") => `<p class="pr-en ${cls}" lang="en" dir="ltr">${esc(o.en)}</p><p class="pr-ar ar ${cls}" lang="ar" dir="rtl">${esc(o.ar)}</p>`;
+    const box = `<div class="pr-review"><span>☐ ${t("printOk")}</span><span>☐ ${t("printFix")}</span><div class="pr-notes">${t("printNotes")}</div></div>`;
+    app.innerHTML = `
+      <div class="print-page">
+        <div class="no-print row"><button class="btn" id="doprint">${t("printBtn")}</button><a class="btn ghost" href="#/lessons">${t("back")}</a></div>
+        <h1>${t("printTitle")}</h1>
+        <p>${t("printIntro")}</p>
+        <p class="muted">${t("printRef")} <bdi class="ar" lang="ar">غاية المريد في علم التجويد، عطية قابل نصر</bdi> · <bdi dir="ltr">${esc(new Date().toISOString().slice(0, 10))}</bdi></p>
+        <p class="pr-sign">${t("reviewer")} ____________________ &nbsp; ${t("reviewDate")} ____________</p>
+        ${categories.map(c => `
+          <section class="pr-cat">
+            <h2 style="color:${c.color}">${esc(c.name.en)} · <span class="ar" lang="ar">${esc(c.name.ar)}</span></h2>
+            ${both(c.intro, "muted")}
+            ${rules.filter(r => r.cat === c.id).map((r, i) => `
+              <article class="pr-rule" style="--c:${c.color}">
+                <h3>${i + 1}. ${esc(r.name.en)} · <span class="ar" lang="ar">${esc(r.name.ar)}</span></h3>
+                ${both(r.summary)}
+                <p><b>${t("letters")}:</b> <span class="ar" lang="ar">${esc(r.letters)}</span></p>
+                ${both(r.how, "how")}
+                <div class="pr-ex">${r.examples.map(e => `<span class="ex">${renderAr(e, c.color, { ref: true, noPlay: true })}</span>`).join("")}</div>
+                ${box}
+              </article>`).join("")}
+          </section>`).join("")}
+      </div>`;
+    app.querySelector("#doprint").onclick = () => window.print();
+  }
+
   // ---------- router ----------
   function route() {
     const h = location.hash.slice(1) || "/";
@@ -474,6 +535,7 @@
     else if (parts[0] === "lesson") viewLesson(parts[1], focus);
     else if (parts[0] === "quiz") viewQuizSetup(params);
     else if (parts[0] === "progress") viewProgress();
+    else if (parts[0] === "print") viewPrint();
     else viewHome();
     if (!focus) window.scrollTo(0, 0);
     countPage("#/" + parts.join("/"));

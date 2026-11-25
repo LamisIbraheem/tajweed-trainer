@@ -146,3 +146,30 @@ button.lchip.loading { opacity: .6; animation: pulse 1s infinite; }
 button.lchip.error { border-color: var(--bad); color: var(--bad); }
 .qword { font-size: 1.7rem; line-height: 2.2; margin-top: .2rem; }
 .qword .muted { font: .85rem "Inter", sans-serif; }
+
+/* report a mistake */
+.report { display: inline-block; margin-top: .9rem; font-size: .82rem; color: var(--muted); }
+.report:hover { color: var(--bad); }
+.footer-links a { color: var(--muted); text-decoration: underline; }
+
+/* printable review copy */
+.print-page h2 { margin-top: 2rem; border-bottom: 2px solid var(--line); padding-bottom: .3rem; }
+.pr-rule { border-inline-start: 4px solid var(--c); padding: .2rem 0 .6rem 1rem; margin: 1rem 0; }
+.pr-rule h3 { margin: .2rem 0 .4rem; }
+.pr-en, .pr-ar { margin: .25rem 0; }
+.pr-ar { font-size: 1.15rem; line-height: 1.9; }
+.pr-rule .how { white-space: pre-line; }
+.pr-ex { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; direction: rtl; font-size: 1.5rem; margin: .4rem 0; }
+.pr-ex .ex { background: none; border: 0; padding: 0; line-height: 2; }
+.pr-review { display: flex; flex-wrap: wrap; gap: 1.5rem; font-size: .9rem; margin-top: .4rem; }
+.pr-notes { flex-basis: 100%; border-bottom: 1px dotted var(--muted); height: 2.4rem; }
+.pr-sign { margin: 1.2rem 0; }
+@media print {
+  header.top, footer, .no-print, .play { display: none !important; }
+  body { background: #fff; color: #000; }
+  main { max-width: none; padding: 0; }
+  .pr-cat { break-before: page; }
+  .pr-cat:first-of-type { break-before: auto; }
+  .pr-rule { break-inside: avoid; }
+  .hl { background: none !important; text-decoration: underline; }
+}
