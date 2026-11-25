@@ -173,3 +173,14 @@ button.lchip.error { border-color: var(--bad); color: var(--bad); }
   .pr-rule { break-inside: avoid; }
   .hl { background: none !important; text-decoration: underline; }
 }
+
+/* record yourself and compare */
+.rec { display: inline-flex; gap: .25rem; vertical-align: middle; margin-inline-start: .2rem; }
+.recbtn { display: inline-grid; place-items: center; grid-auto-flow: column; gap: .15rem; min-width: 2rem; height: 2rem; padding: 0 .4rem;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); font: 600 .8rem/1 "Inter", sans-serif; cursor: pointer; }
+.recbtn small { font-size: .65rem; font-weight: 600; color: var(--muted); }
+.recbtn:hover { border-color: var(--accent); }
+.recbtn.playing { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.recbtn.playing small { color: inherit; }
+.recbtn.recording { background: var(--bad); border-color: var(--bad); color: #fff; animation: pulse 1s infinite; }
+.rec-note { font-size: .82rem; margin: -.3rem 0 .6rem; }

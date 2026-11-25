@@ -35,6 +35,10 @@ window.I18N = {
     printIntro: "Every rule, explanation and example on the site, in English and Arabic, with the surah:ayah of each example. Please mark each rule and note any corrections.",
     printBtn: "Print / save as PDF", printOk: "Correct", printFix: "Needs correction", printNotes: "Notes:",
     printRef: "Reference:", reviewer: "Reviewed by:", reviewDate: "Date:",
+    recordYou: "Record yourself", recStop: "Stop recording", playMine: "Play your recording", you: "you",
+    compare: "Compare: al-Husary, then you",
+    recNote: "Press the microphone to record yourself reciting an example, then press ⇄ to hear al-Husary and then you. Recordings stay on this device and disappear when you leave the page.",
+    micDenied: "The microphone isn't available. Allow microphone access for this site in your browser settings, then try again.",
     listen: "Listen (al-Husary)", hearLetters: "Hear each letter", asIn: "as in", audioError: "The audio couldn't load. Check your internet connection.",
     openLesson: "Open lesson", footer: "Rules follow the riwayah of Hafs 'an 'Asim. Always confirm your recitation with a qualified teacher."
   },
@@ -74,6 +78,10 @@ window.I18N = {
     printIntro: "جميع الأحكام والشروح والأمثلة في الموقع بالعربية والإنجليزية، مع رقم السورة والآية لكل مثال. يُرجى تقييم كل حكم وتدوين أي تصحيح.",
     printBtn: "اطبع / احفظ PDF", printOk: "صحيح", printFix: "يحتاج إلى تصحيح", printNotes: "ملاحظات:",
     printRef: "المرجع:", reviewer: "المراجِع:", reviewDate: "التاريخ:",
+    recordYou: "سجّل تلاوتك", recStop: "أوقف التسجيل", playMine: "استمع إلى تسجيلك", you: "أنت",
+    compare: "قارن: الحصري ثم أنت",
+    recNote: "اضغط زر الميكروفون لتسجّل تلاوتك لأحد الأمثلة، ثم اضغط ⇄ لتسمع الحصري ثم تسمع نفسك. تبقى التسجيلات على جهازك فقط وتُحذف عند مغادرة الصفحة.",
+    micDenied: "الميكروفون غير متاح. اسمح لهذا الموقع باستخدام الميكروفون من إعدادات المتصفح ثم حاول مرة أخرى.",
     listen: "استمع (الحصري)", hearLetters: "استمع إلى كل حرف", asIn: "كما في", audioError: "تعذّر تحميل الصوت. تحقّق من اتصالك بالإنترنت.",
     openLesson: "افتح الدرس", footer: "الأحكام على رواية حفص عن عاصم. اعرض تلاوتك دائمًا على معلّم متقن."
   }

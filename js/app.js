@@ -70,21 +70,23 @@
     return `<span class="ar" lang="ar" dir="rtl">${html}</span>` + (stop ? ` <span class="stop" title="waqf">${t("stopBadge")}</span>` : "")
       + (start ? ` <span class="stop" title="ibtida'">${t("startBadge")}</span>` : "")
       + (clip && !opts.noPlay ? ` <button class="play" type="button" data-ex="${esc(key)}" title="${t("listen")}" aria-label="${t("listen")}">▶</button>` : "")
+      + (clip && !opts.noPlay && opts.rec ? " " + recControls(key) : "")
       + (clip && opts.ref ? ` <small class="ref muted" dir="ltr">${clip[3]}</small>` : "");
   }
 
   // ---------- audio (al-Husary, played word-accurate from the full-ayah recording) ----------
   const AUDIO = window.TAJWEED_AUDIO || { base: "", clips: {} };
   const player = new Audio(); player.preload = "none";
-  let playing = null, stopTimer = null;
+  let playing = null, stopTimer = null, onClipDone = null;
   function stopClip() {
-    clearInterval(stopTimer); stopTimer = null; player.pause();
+    clearInterval(stopTimer); stopTimer = null; player.pause(); onClipDone = null;
     if (playing) playing.classList.remove("playing", "loading");
     playing = null;
   }
-  function playClip(key, btn) {
+  // onDone runs only when the clip plays to its end (not when it is stopped), e.g. "compare" then plays your recording.
+  function playClip(key, btn, onDone) {
     const clip = AUDIO.clips[key]; if (!clip) return;
-    const wasThis = playing === btn; stopClip(); if (wasThis) return;   // second click stops it
+    const wasThis = playing === btn; stopClip(); stopMine(); if (wasThis) return;   // second click stops it
     const [file, startMs, endMs] = clip, src = AUDIO.base + file;
     playing = btn; btn.classList.add("loading"); btn.classList.remove("error");
     const start = Math.max(0, startMs / 1000 - 0.05), end = endMs / 1000 + 0.15;
@@ -93,7 +95,10 @@
       player.play().then(() => {
         if (playing !== btn) return;
         btn.classList.replace("loading", "playing");
-        stopTimer = setInterval(() => { if (player.currentTime >= end || player.ended) stopClip(); }, 30);
+        onClipDone = onDone || null;
+        stopTimer = setInterval(() => {
+          if (player.currentTime >= end || player.ended) { const done = onClipDone; stopClip(); if (done) done(); }
+        }, 30);
       }).catch(() => { if (playing === btn) { stopClip(); btn.classList.add("error"); btn.title = t("audioError"); } });
     };
     if (player.src !== src) {
@@ -107,7 +112,86 @@
     const b = e.target.closest("button[data-ex]");
     if (b) { e.preventDefault(); playClip(b.dataset.ex, b); }
   });
-  window.addEventListener("hashchange", stopClip);
+  window.addEventListener("hashchange", () => { stopClip(); stopMine(); stopRec(); });
+
+  // ---------- record yourself and compare ----------
+  // Recordings live only in memory (object URLs) for this visit: nothing is uploaded or saved.
+  const CAN_RECORD = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  const MAX_REC_MS = 20000;
+  const MIC_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`;
+  const recs = {};                 // example key -> object URL of the latest recording
+  const mine = new Audio();
+  let rec = null, minePlaying = null;
+  function recControls(key) {
+    if (!CAN_RECORD) return "";
+    const k = esc(key), recording = rec && rec.key === key;
+    return `<span class="rec" data-rec-key="${k}">`
+      + `<button class="recbtn${recording ? " recording" : ""}" type="button" data-rec-action="rec" data-key="${k}" title="${recording ? t("recStop") : t("recordYou")}" aria-label="${recording ? t("recStop") : t("recordYou")}">${recording ? "■" : MIC_ICON}</button>`
+      + (recs[key] ? `<button class="recbtn" type="button" data-rec-action="mine" data-key="${k}" title="${t("playMine")}" aria-label="${t("playMine")}">▶︎<small>${t("you")}</small></button>`
+        + `<button class="recbtn" type="button" data-rec-action="cmp" data-key="${k}" title="${t("compare")}" aria-label="${t("compare")}">⇄</button>` : "")
+      + `</span>`;
+  }
+  function refreshRec(key) {
+    document.querySelectorAll(".rec").forEach(s => { if (s.dataset.recKey === key) s.outerHTML = recControls(key); });
+  }
+  function stopMine() {
+    mine.pause();
+    if (minePlaying) minePlaying.classList.remove("playing");
+    minePlaying = null;
+  }
+  function playMine(key, btn) {
+    if (!recs[key]) return;
+    const wasThis = minePlaying === btn; stopClip(); stopMine(); if (wasThis) return;
+    if (mine.src !== recs[key]) mine.src = recs[key];
+    mine.muted = false; mine.currentTime = 0;
+    minePlaying = btn; btn.classList.add("playing");
+    mine.onended = () => { if (minePlaying === btn) stopMine(); };
+    mine.play().catch(() => stopMine());
+  }
+  function stopRec() {
+    if (!rec) return;
+    clearTimeout(rec.timer);
+    if (rec.mr.state !== "inactive") rec.mr.stop();   // onstop saves the recording and releases the microphone
+    else { rec.stream.getTracks().forEach(tr => tr.stop()); const k = rec.key; rec = null; refreshRec(k); }
+  }
+  function startRec(key) {
+    stopClip(); stopMine();
+    if (rec) { const same = rec.key === key; stopRec(); if (same) return; }   // tapping ■ stops
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }).then(stream => {
+      const mr = new MediaRecorder(stream), chunks = [];
+      mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+      mr.onstop = () => {
+        stream.getTracks().forEach(tr => tr.stop());
+        if (chunks.length) {
+          if (recs[key]) URL.revokeObjectURL(recs[key]);
+          recs[key] = URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || "audio/webm" }));
+        }
+        if (rec && rec.mr === mr) rec = null;
+        refreshRec(key);
+      };
+      rec = { key, mr, stream, timer: setTimeout(stopRec, MAX_REC_MS) };
+      mr.start();
+      refreshRec(key);
+    }).catch(() => alert(t("micDenied")));
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("button[data-rec-action]"); if (!b) return;
+    e.preventDefault();
+    const key = b.dataset.key;
+    if (b.dataset.recAction === "rec") startRec(key);
+    else if (b.dataset.recAction === "mine") playMine(key, b);
+    else if (b.dataset.recAction === "cmp") {
+      // al-Husary first, then you, with a short gap
+      if (playing === b || minePlaying === b) { stopClip(); stopMine(); return; }
+      // iPhone Safari only lets audio start from a tap, so "unlock" your recording now (muted, paused at once);
+      // it then plays after al-Husary's clip ends.
+      mine.src = recs[key]; mine.muted = true;
+      const unlocked = mine.play();
+      if (unlocked) unlocked.then(() => { mine.pause(); mine.currentTime = 0; mine.muted = false; }, () => { mine.muted = false; });
+      else mine.muted = false;
+      playClip(key, b, () => setTimeout(() => playMine(key, b), 400));
+    }
+  });
   const catColor = r => catById[r.cat].color;
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function setNav(route) {
@@ -190,7 +274,8 @@
           }).join("")}</span></div>` : ""}
           <div class="kv"><span>${t("howTo")}</span><span class="how">${esc(L(r.how))}</span></div>
           ${r.examples.length ? `<h3>${t("examples")}</h3>
-          <div class="examples">${r.examples.map(e => `<div class="ex">${renderAr(e, c.color, { ref: true, noPlay: r.noAudio })}</div>`).join("")}</div>` : ""}
+          ${CAN_RECORD && !r.noAudio ? `<p class="rec-note muted">${t("recNote")}</p>` : ""}
+          <div class="examples">${r.examples.map(e => `<div class="ex">${renderAr(e, c.color, { ref: true, noPlay: r.noAudio, rec: true })}</div>`).join("")}</div>` : ""}
           <a class="report" href="${reportUrl(r)}" target="_blank" rel="noopener">⚑ ${t("reportMistake")}</a>
         </article>`).join("")}
       <div class="row">
