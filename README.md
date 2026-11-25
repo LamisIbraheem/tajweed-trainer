@@ -15,6 +15,7 @@ No installs are needed. Fonts load from Google Fonts when online and fall back t
 ## Features (v1)
 - **Lessons:** 7 rule groups and 26 rules (Noon sakinah/tanween, Meem sakinah, Ghunnah, Qalqalah, Lam rules, Madd, Tafkheem/Tarqeeq). Each rule has its letters, how to recite it, and colour-highlighted examples. A "stop" badge marks examples read while stopping (waqf).
 - **Makharij & Sifat:** the 17 makharij in 5 areas and the 20 sifat, following *Ghayat al-Murid fi 'Ilm al-Tajwid* ('Atiyya Qabil Nasr). Their quizzes show one letter and ask where it comes from or which characteristic it has; the choices never include another answer that is also true for that letter.
+- **Audio:** every example has a ▶ button that plays just those words from Sheikh Mahmoud Khalil al-Husary's recitation (Hafs, murattal), streamed from everyayah.com using quran.com's word timings. In quizzes press **P** to play. Needs an internet connection.
 - **Quizzes:** identify the rule from a highlighted example, or from a letter combination (e.g. نْ + ص). Choose rule groups, length, and "focus on weak rules" mode. Keys 1–4 answer.
 - **Progress:** per-rule mastery (last 10 answers), studied markers, and quiz history, saved in the browser's localStorage.
 - **English / Arabic** UI toggle with full RTL.
@@ -24,3 +25,4 @@ No installs are needed. Fonts load from Google Fonts when online and fall back t
 - `js/i18n.js`: UI strings.
 - `js/app.js`: router, views, quiz engine, progress.
 - `css/style.css`: styles (light and dark).
+- `js/audio.js`: generated audio clip map (ayah file + start/end time for each example). After adding or changing examples in `data.js`, regenerate it with `perl tools/audio_map.pl js/data.js <tanzil quran-simple JSON> js/audio.js <cache dir>` (the Quran text JSON is from https://api.alquran.cloud/v1/quran/quran-simple).

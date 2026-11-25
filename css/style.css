@@ -125,3 +125,14 @@ footer p { margin: .3rem 0; }
 footer .sources a { font-family: var(--ar-font); font-size: 1.05em; }
 .qletter { font-size: 3.2rem; line-height: 1.4; }
 .kv .how { white-space: pre-line; }
+
+/* audio */
+.play { display: inline-grid; place-items: center; width: 2rem; height: 2rem; padding: 0; margin-inline-start: .35rem; vertical-align: middle;
+  border: 1px solid var(--accent); border-radius: 50%; background: var(--card); color: var(--accent); font: 700 .8rem/1 "Inter", sans-serif; cursor: pointer; }
+.play:hover { background: var(--accent); color: var(--accent-ink); }
+.play.playing { background: var(--accent); color: var(--accent-ink); }
+.play.loading { opacity: .6; animation: pulse 1s infinite; }
+.play.error { border-color: var(--bad); color: var(--bad); }
+@keyframes pulse { 50% { opacity: .3; } }
+.qar .play { width: 2.6rem; height: 2.6rem; font-size: 1rem; }
+.ex .ref { font: .7rem "Inter", sans-serif; margin-inline-start: .3rem; vertical-align: middle; }

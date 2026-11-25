@@ -39,12 +39,52 @@
   }
 
   // ---------- rendering helpers ----------
-  function renderAr(text, color) {
+  function renderAr(text, color, opts = {}) {
+    const key = text;
     let stop = false;
     if (text.endsWith("|")) { stop = true; text = text.slice(0, -1); }
     const html = esc(text).replace(/\{([^}]*)\}/g, (_, m) => `<span class="hl" style="color:${color}">${m}</span>`);
-    return `<span class="ar" lang="ar" dir="rtl">${html}</span>` + (stop ? ` <span class="stop" title="waqf">${t("stopBadge")}</span>` : "");
+    const clip = AUDIO.clips[key];
+    return `<span class="ar" lang="ar" dir="rtl">${html}</span>` + (stop ? ` <span class="stop" title="waqf">${t("stopBadge")}</span>` : "")
+      + (clip ? ` <button class="play" type="button" data-ex="${esc(key)}" title="${t("listen")}" aria-label="${t("listen")}">▶</button>`
+          + (opts.ref ? ` <small class="ref muted" dir="ltr">${clip[3]}</small>` : "") : "");
   }
+
+  // ---------- audio (al-Husary, played word-accurate from the full-ayah recording) ----------
+  const AUDIO = window.TAJWEED_AUDIO || { base: "", clips: {} };
+  const player = new Audio(); player.preload = "none";
+  let playing = null, stopTimer = null;
+  function stopClip() {
+    clearInterval(stopTimer); stopTimer = null; player.pause();
+    if (playing) playing.classList.remove("playing", "loading");
+    playing = null;
+  }
+  function playClip(key, btn) {
+    const clip = AUDIO.clips[key]; if (!clip) return;
+    const wasThis = playing === btn; stopClip(); if (wasThis) return;   // second click stops it
+    const [file, startMs, endMs] = clip, src = AUDIO.base + file;
+    playing = btn; btn.classList.add("loading"); btn.classList.remove("error");
+    const start = Math.max(0, startMs / 1000 - 0.05), end = endMs / 1000 + 0.15;
+    const go = () => {
+      player.currentTime = start;
+      player.play().then(() => {
+        if (playing !== btn) return;
+        btn.classList.replace("loading", "playing");
+        stopTimer = setInterval(() => { if (player.currentTime >= end || player.ended) stopClip(); }, 30);
+      }).catch(() => { if (playing === btn) { stopClip(); btn.classList.add("error"); btn.title = t("audioError"); } });
+    };
+    if (player.src !== src) {
+      player.src = src;
+      player.addEventListener("loadedmetadata", go, { once: true });
+      player.addEventListener("error", () => { if (playing === btn) { stopClip(); btn.classList.add("error"); btn.title = t("audioError"); } }, { once: true });
+      player.load();
+    } else go();
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("button.play");
+    if (b) { e.preventDefault(); playClip(b.dataset.ex, b); }
+  });
+  window.addEventListener("hashchange", stopClip);
   const catColor = r => catById[r.cat].color;
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function setNav(route) {
@@ -121,7 +161,7 @@
           <div class="kv"><span>${t("letters")}</span><span class="ar letters" lang="ar">${esc(r.letters)}</span></div>
           <div class="kv"><span>${t("howTo")}</span><span class="how">${esc(L(r.how))}</span></div>
           <h3>${t("examples")}</h3>
-          <div class="examples">${r.examples.map(e => `<div class="ex">${renderAr(e, c.color)}</div>`).join("")}</div>
+          <div class="examples">${r.examples.map(e => `<div class="ex">${renderAr(e, c.color, { ref: true })}</div>`).join("")}</div>
         </article>`).join("")}
       <div class="row">
         <a class="btn" href="#/quiz?cats=${c.id}">${t("practiceCat")}</a>
@@ -263,10 +303,11 @@
           <a class="btn ghost" href="#/lesson/${r.cat}#${r.id}" target="_self">${t("openLesson")}</a></div>
         </div>`;
       app.querySelector("#nextq").focus();
-      app.querySelector("#nextq").onclick = () => { quiz.answered = false; quiz.i++; last ? viewResults() : viewQuestion(); };
+      app.querySelector("#nextq").onclick = () => { stopClip(); quiz.answered = false; quiz.i++; last ? viewResults() : viewQuestion(); };
     };
     app.querySelectorAll(".opt").forEach(b => b.onclick = () => answer(b.dataset.id));
     quiz.keyHandler = e => {
+      if (e.key === "p" || e.key === "P") { const pb = app.querySelector(".qar .play"); if (pb) playClip(pb.dataset.ex, pb); return; }
       const n = parseInt(e.key, 10);
       if (!quiz.answered && n >= 1 && n <= q.options.length) answer(q.options[n - 1]);
     };
