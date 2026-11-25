@@ -14,6 +14,7 @@ No installs are needed. Fonts load from Google Fonts when online and fall back t
 
 ## Features (v1)
 - **Lessons:** 7 rule groups and 26 rules (Noon sakinah/tanween, Meem sakinah, Ghunnah, Qalqalah, Lam rules, Madd, Tafkheem/Tarqeeq). Each rule has its letters, how to recite it, and colour-highlighted examples. A "stop" badge marks examples read while stopping (waqf).
+- **Makharij & Sifat:** the 17 makharij in 5 areas and the 20 sifat, following *Ghayat al-Murid fi 'Ilm al-Tajwid* ('Atiyya Qabil Nasr). Their quizzes show one letter and ask where it comes from or which characteristic it has; the choices never include another answer that is also true for that letter.
 - **Quizzes:** identify the rule from a highlighted example, or from a letter combination (e.g. نْ + ص). Choose rule groups, length, and "focus on weak rules" mode. Keys 1–4 answer.
 - **Progress:** per-rule mastery (last 10 answers), studied markers, and quiz history, saved in the browser's localStorage.
 - **English / Arabic** UI toggle with full RTL.

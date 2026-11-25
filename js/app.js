@@ -119,7 +119,7 @@
           </header>
           <p>${esc(L(r.summary))}</p>
           <div class="kv"><span>${t("letters")}</span><span class="ar letters" lang="ar">${esc(r.letters)}</span></div>
-          <div class="kv"><span>${t("howTo")}</span><span>${esc(L(r.how))}</span></div>
+          <div class="kv"><span>${t("howTo")}</span><span class="how">${esc(L(r.how))}</span></div>
           <h3>${t("examples")}</h3>
           <div class="examples">${r.examples.map(e => `<div class="ex">${renderAr(e, c.color)}</div>`).join("")}</div>
         </article>`).join("")}
@@ -143,6 +143,11 @@
   function buildQuestions(catIds, n, mode) {
     const pool = [];
     rules.filter(r => catIds.includes(r.cat)).forEach(r => {
+      // Makharij / sifat: one question per letter ("where is it pronounced from?" / "which characteristic?").
+      if (catById[r.cat].quiz === "letters") {
+        (r.quizLetters || "").split(" ").filter(Boolean).forEach(l => pool.push({ type: "sound", rule: r.id, letter: l }));
+        return;
+      }
       r.examples.forEach(ex => pool.push({ type: "ex", rule: r.id, ex }));
       if (r.trigger) r.trigger.letters.split(" ").forEach(l => pool.push({ type: "letter", rule: r.id, prefix: r.trigger.prefix, letter: l }));
     });
@@ -163,7 +168,16 @@
       const q = cands[k]; used.add(pool.indexOf(q)); perRule[q.rule] = (perRule[q.rule] || 0) + 1;
       picked.push(q);
     }
-    return picked.map(q => Object.assign(q, { options: buildOptions(q.rule) }));
+    return picked.map(q => Object.assign(q, { options: q.type === "sound" ? buildLetterOptions(q.rule, q.letter) : buildOptions(q.rule) }));
+  }
+
+  // Choices for a single-letter question: only rules from the same group (e.g. hams vs jahr),
+  // never one that also applies to this letter, so exactly one answer is right.
+  function buildLetterOptions(ruleId, letter) {
+    const r = ruleById[ruleId];
+    const has = x => (x.quizLetters || "").split(" ").includes(letter);
+    const others = shuffle(rules.filter(x => x.cat === r.cat && x.id !== r.id && (x.group || "") === (r.group || "") && !has(x)));
+    return shuffle([ruleId, ...others.slice(0, 3).map(x => x.id)]);
   }
 
   function buildOptions(ruleId) {
@@ -175,7 +189,7 @@
     if (r.id === "madd_tabii") banned.add("madd_arid");
     const same = shuffle(rules.filter(x => x.cat === r.cat && !banned.has(x.id)));
     const close = shuffle((r.confusable || []).map(id => ruleById[id]).filter(x => x && !banned.has(x.id)));
-    const other = shuffle(rules.filter(x => x.cat !== r.cat && !banned.has(x.id)));
+    const other = shuffle(rules.filter(x => x.cat !== r.cat && !banned.has(x.id) && catById[x.cat].quiz !== "letters"));
     const out = [];
     [...close, ...same, ...other].forEach(x => { if (out.length < 3 && !out.includes(x.id)) out.push(x.id); });
     return shuffle([ruleId, ...out]);
@@ -219,6 +233,8 @@
     const q = quiz.qs[quiz.i], r = ruleById[q.rule];
     const prompt = q.type === "ex"
       ? `<p class="qtext">${t("qExample")}</p><div class="qar">${renderAr(q.ex, catColor(r))}</div>`
+      : q.type === "sound"
+      ? `<p class="qtext">${esc(L(catById[r.cat].question))}</p><div class="qar"><span class="ar hl qletter" lang="ar" dir="rtl" style="color:${catColor(r)}">${esc(q.letter)}</span></div>`
       : `<p class="qtext">${t("qLetterTitle")}</p><div class="qar"><span class="ar" lang="ar" dir="rtl">${esc(q.prefix)} <span class="plus">+</span> <span class="hl" style="color:${catColor(r)}">${esc(q.letter)}</span></span></div>`;
     app.innerHTML = `
       <div class="qhead"><span>${t("question")} ${quiz.i + 1} ${t("of")} ${quiz.qs.length}</span>
@@ -271,7 +287,9 @@
         <h2>${t("review")}</h2>
         ${wrong.length ? wrong.map(a => {
           const r = ruleById[a.q.rule];
-          const shown = a.q.type === "ex" ? renderAr(a.q.ex, catColor(r)) : `<span class="ar" dir="rtl">${esc(a.q.prefix)} + ${esc(a.q.letter)}</span>`;
+          const shown = a.q.type === "ex" ? renderAr(a.q.ex, catColor(r))
+            : a.q.type === "sound" ? `<span class="ar" dir="rtl">${esc(a.q.letter)}</span>`
+            : `<span class="ar" dir="rtl">${esc(a.q.prefix)} + ${esc(a.q.letter)}</span>`;
           return `<div class="review-item"><div>${shown}</div>
             <div><s class="muted">${esc(L(ruleById[a.chosen].name))}</s> → <a href="#/lesson/${r.cat}#${r.id}"><b>${esc(L(r.name))}</b></a></div></div>`;
         }).join("") : `<p>${t("noMistakes")}</p>`}
