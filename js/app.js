@@ -65,7 +65,7 @@
     if (text.endsWith("|")) { stop = true; text = text.slice(0, -1); }
     // A leading "^" marks an example read when starting (e.g. hamzat al-wasl); it comes from the start of an ayah.
     if (text.startsWith("^")) { start = true; text = text.slice(1); }
-    const html = esc(text).replace(/\{([^}]*)\}/g, (_, m) => `<span class="hl" style="color:${color}">${m}</span>`);
+    const html = esc(text).replace(/\{([^}]*)\}/g, (_, m) => `<span class="hl" style="--c:${color}">${m}</span>`);
     const clip = AUDIO.clips[key];
     return `<span class="ar" lang="ar" dir="rtl">${html}</span>` + (stop ? ` <span class="stop" title="waqf">${t("stopBadge")}</span>` : "")
       + (start ? ` <span class="stop" title="ibtida'">${t("startBadge")}</span>` : "")
@@ -196,6 +196,8 @@
     }
   });
   const catColor = r => catById[r.cat].color;
+  // A mushaf stop sign (the small mark printed above the text), enlarged so its shape reads clearly.
+  const signMark = (r, small) => `<span class="sign-mark cc${small ? " small" : ""}" lang="ar" dir="rtl" style="--c:${catColor(r)}" role="img" aria-label="${esc(r.letters)}"><span> ${r.mark} </span></span>`;
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function setNav(route) {
     document.querySelectorAll("nav a[data-r]").forEach(a => a.classList.toggle("active", a.dataset.r === route));
@@ -259,7 +261,7 @@
     const idx = categories.indexOf(c), nextCat = categories[idx + 1];
     app.innerHTML = `
       <a class="back" href="#/lessons">${t("back")}</a>
-      <h1 style="color:${c.color}">${esc(L(c.name))}</h1>
+      <h1 class="cc" style="--c:${c.color}">${esc(L(c.name))}</h1>
       <p class="lead">${esc(L(c.intro))}</p>
       ${rs.map(r => `
         <article class="card rule" id="${r.id}" style="--c:${c.color}">
@@ -268,8 +270,8 @@
             <button class="btn small ${state.learned[r.id] ? "done" : "ghost"}" data-learn="${r.id}">${state.learned[r.id] ? t("learned") : t("markLearned")}</button>
           </header>
           <p>${esc(L(r.summary))}</p>
-          <div class="kv"><span>${t("letters")}</span><span class="ar letters" lang="ar">${esc(r.letters)}</span></div>
-          ${r.quizLetters ? `<div class="kv"><span>${t("hearLetters")}</span><span class="lchips">${r.quizLetters.split(" ").map(l => {
+          <div class="kv"><span>${t("letters")}</span><span class="ar letters" lang="ar">${r.mark ? signMark(r, true) + " " : ""}${esc(r.letters)}</span></div>
+          ${r.quizLetters && !r.mark ? `<div class="kv"><span>${t("hearLetters")}</span><span class="lchips">${r.quizLetters.split(" ").map(l => {
             const w = letterWord[l];
             return w && AUDIO.clips[w]
               ? `<button class="lchip ar" type="button" lang="ar" data-ex="${esc(w)}" title="${esc(w.replace(/[{}|]/g, ""))}">${esc(l)}</button>`
@@ -399,9 +401,12 @@
     const prompt = q.type === "ex"
       ? `<p class="qtext">${t("qExample")}</p><div class="qar">${renderAr(q.ex, catColor(r), { noPlay: r.noAudio })}</div>`
       : q.type === "sound"
-      ? `<p class="qtext">${esc(L(catById[r.cat].question))}</p><div class="qar"><div class="ar qletter" lang="ar" dir="rtl" style="color:${catColor(r)}">${esc(q.letter)}</div>${
-          letterWord[q.letter] ? `<div class="qword" title="${t("asIn")}">${renderAr(letterWord[q.letter], catColor(r))}</div>` : ""}</div>`
-      : `<p class="qtext">${t("qLetterTitle")}</p><div class="qar"><span class="ar" lang="ar" dir="rtl">${esc(q.prefix)} <span class="plus">+</span> <span class="hl" style="color:${catColor(r)}">${esc(q.letter)}</span></span></div>`;
+      ? `<p class="qtext">${esc(L(catById[r.cat].question))}</p><div class="qar">${r.mark
+          // stop signs: the mark as printed in the mushaf, enlarged, then the ayah where it appears
+          ? `${signMark(r)}<div class="qword">${renderAr(r.examples[0], catColor(r))}</div>`
+          : `<div class="ar qletter cc" lang="ar" dir="rtl" style="--c:${catColor(r)}">${esc(q.letter)}</div>${
+            letterWord[q.letter] ? `<div class="qword" title="${t("asIn")}">${renderAr(letterWord[q.letter], catColor(r))}</div>` : ""}`}</div>`
+      : `<p class="qtext">${t("qLetterTitle")}</p><div class="qar"><span class="ar" lang="ar" dir="rtl">${esc(q.prefix)} <span class="plus">+</span> <span class="hl" style="--c:${catColor(r)}">${esc(q.letter)}</span></span></div>`;
     app.innerHTML = `
       <div class="qhead"><span>${t("question")} ${quiz.i + 1} ${t("of")} ${quiz.qs.length}</span>
         <div class="bar"><i style="width:${100 * quiz.i / quiz.qs.length}%"></i></div></div>
@@ -456,7 +461,7 @@
         ${wrong.length ? wrong.map(a => {
           const r = ruleById[a.q.rule];
           const shown = a.q.type === "ex" ? renderAr(a.q.ex, catColor(r))
-            : a.q.type === "sound" ? `<span class="ar" dir="rtl">${esc(a.q.letter)}</span>`
+            : a.q.type === "sound" ? (r.mark ? signMark(r, true) : `<span class="ar" dir="rtl">${esc(a.q.letter)}</span>`)
             : `<span class="ar" dir="rtl">${esc(a.q.prefix)} + ${esc(a.q.letter)}</span>`;
           return `<div class="review-item"><div>${shown}</div>
             <div><s class="muted">${esc(L(ruleById[a.chosen].name))}</s> → <a href="#/lesson/${r.cat}#${r.id}"><b>${esc(L(r.name))}</b></a></div></div>`;
@@ -474,7 +479,7 @@
       <div class="card">
         <h2>${t("perRule")}</h2>
         ${categories.map(c => `
-          <h3 style="color:${c.color}">${esc(L(c.name))}</h3>
+          <h3 class="cc" style="--c:${c.color}">${esc(L(c.name))}</h3>
           ${rules.filter(r => r.cat === c.id).map(r => {
             const s = ruleStat(r.id), acc = ruleAcc(r.id), st = ruleStatus(r.id);
             return `<div class="prow">
@@ -661,13 +666,13 @@
         <p class="pr-sign">${t("reviewer")} ____________________ &nbsp; ${t("reviewDate")} ____________</p>
         ${categories.map(c => `
           <section class="pr-cat">
-            <h2 style="color:${c.color}">${esc(c.name.en)} · <span class="ar" lang="ar">${esc(c.name.ar)}</span></h2>
+            <h2 class="cc" style="--c:${c.color}">${esc(c.name.en)} · <span class="ar" lang="ar">${esc(c.name.ar)}</span></h2>
             ${both(c.intro, "muted")}
             ${rules.filter(r => r.cat === c.id).map((r, i) => `
               <article class="pr-rule" style="--c:${c.color}">
                 <h3>${i + 1}. ${esc(r.name.en)} · <span class="ar" lang="ar">${esc(r.name.ar)}</span></h3>
                 ${both(r.summary)}
-                <p><b>${t("letters")}:</b> <span class="ar" lang="ar">${esc(r.letters)}</span></p>
+                <p><b>${t("letters")}:</b> <span class="ar" lang="ar">${r.mark ? signMark(r, true) + " " : ""}${esc(r.letters)}</span></p>
                 ${both(r.how, "how")}
                 <div class="pr-ex">${r.examples.map(e => `<span class="ex">${renderAr(e, c.color, { ref: true, noPlay: true })}</span>`).join("")}</div>
                 ${box}

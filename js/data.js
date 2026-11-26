@@ -28,7 +28,7 @@ window.TAJWEED = {
     { id: "madd", color: "#c62828", name: { en: "Madd (Elongation)", ar: "أحكام المد" },
       intro: { en: "Madd is lengthening a vowel on the letters ا و ي. Length is counted in harakat (1 harakah ≈ the time to fold or open a finger).",
                ar: "المد إطالة الصوت بحرف من حروف المد (ا و ي)، ويقاس بالحركات." } },
-    { id: "tafkheem", color: "#ef6c00", name: { en: "Heavy & Light Letters", ar: "التفخيم والترقيق" },
+    { id: "tafkheem", color: "#e65100", name: { en: "Heavy & Light Letters", ar: "التفخيم والترقيق" },
       intro: { en: "Some letters are always heavy (tafkheem), and the letter ra can be heavy or light.",
                ar: "من الحروف ما يُفخَّم دائمًا، ومنها ما يُفخَّم تارة ويُرقَّق تارة كالراء." } },
     { id: "meeting", color: "#283593", exclusiveWith: ["noon", "meem", "ghunnah", "lam"], name: { en: "Two Meeting Letters", ar: "المتماثلان والمتجانسان والمتقاربان والمتباعدان" },
@@ -475,7 +475,8 @@ window.TAJWEED = {
       confusable: ["stop_sukun"] },
 
     // ---------- Stop signs (quiz: one sign at a time) ----------
-    { id: "sign_lazim", cat: "signs", group: "signs", name: { en: "مـ: Necessary stop", ar: "مـ: الوقف اللازم" },
+    // mark: the sign as printed above the text in the mushaf (shown enlarged in the quiz and on the lesson card)
+    { id: "sign_lazim", cat: "signs", group: "signs", mark: "ۘ", name: { en: "Necessary stop", ar: "الوقف اللازم" },
       summary: { en: "You must stop here: joining would change or confuse the meaning.",
                  ar: "يلزم الوقف هنا، لأن الوصل يوهم معنى غير المراد." },
       letters: "مـ", quizLetters: "مـ",
@@ -483,28 +484,28 @@ window.TAJWEED = {
              ar: "«فَلَا يَحْزُنكَ قَوْلُهُمْ ۘ إِنَّا نَعْلَمُ» لو وُصل لأوهم أن ما بعده من قولهم." },
       examples: ["{قَوْلُهُمْ ۘ} إِنَّا نَعْلَمُ", "الَّذِينَ {يَسْمَعُونَ ۘ} وَالْمَوْتَىٰ"] },
 
-    { id: "sign_qala", cat: "signs", group: "signs", name: { en: "قلى: Stopping is better", ar: "قلى: الوقف أولى" },
+    { id: "sign_qala", cat: "signs", group: "signs", mark: "ۗ", name: { en: "Stopping is better", ar: "الوقف أولى" },
       summary: { en: "You may stop or join; stopping is preferred.",
                  ar: "يجوز الوقف والوصل، والوقف أولى." },
       letters: "قلى", quizLetters: "قلى",
       how: { en: "Usually a complete (tam) stop.", ar: "وغالبًا يكون وقفًا تامًا." },
       examples: ["يَتُوبُ اللَّهُ {عَلَيْهِمْ ۗ} وَكَانَ", "إِلَّا {قَلِيلٌ ۗ} فَلَا تُمَارِ"] },
 
-    { id: "sign_jaiz", cat: "signs", group: "signs", name: { en: "ج: Either is fine", ar: "ج: الوقف جائز" },
+    { id: "sign_jaiz", cat: "signs", group: "signs", mark: "ۚ", name: { en: "Stopping and joining are equal", ar: "الوقف والوصل سواء" },
       summary: { en: "Stopping and joining are equally allowed.",
                  ar: "يجوز الوقف والوصل على السواء." },
       letters: "ج", quizLetters: "ج",
       how: { en: "Usually a sufficient (kafi) stop.", ar: "وغالبًا يكون وقفًا كافيًا." },
       examples: ["{وَاسْتَغْفِرْهُ ۚ} إِنَّهُ", "وَتَوَكَّلْ {عَلَى اللَّهِ ۚ} إِنَّهُ هُوَ"] },
 
-    { id: "sign_sila", cat: "signs", group: "signs", name: { en: "صلى: Joining is better", ar: "صلى: الوصل أولى" },
+    { id: "sign_sila", cat: "signs", group: "signs", mark: "ۖ", name: { en: "Joining is better", ar: "الوصل أولى" },
       summary: { en: "You may stop or join; joining is preferred.",
                  ar: "يجوز الوقف والوصل، والوصل أولى." },
       letters: "صلى", quizLetters: "صلى",
       how: { en: "If you do stop here, the stop is acceptable.", ar: "وإن وقف القارئ فلا حرج." },
       examples: ["{رَبِّهِمْ ۖ}"] },
 
-    { id: "sign_la", cat: "signs", group: "signs", name: { en: "لا: Don't start after it", ar: "لا: لا يُبتدأ بما بعده" },
+    { id: "sign_la", cat: "signs", group: "signs", mark: "ۙ", name: { en: "Don't start from the next word", ar: "عدم الابتداء بما بعده" },
       summary: { en: "Don't stop here to start again from the next word. If you stop here, go back and start from earlier.",
                  ar: "لا يُوقف هنا ليُبتدأ بما بعده، فإن وُقف عليه أُعيد الابتداء مما قبله." },
       letters: "لا", quizLetters: "لا",
@@ -512,7 +513,7 @@ window.TAJWEED = {
              ar: "وقد يصح الوقف عليه أحيانًا كرؤوس الآي، لكن لا يجوز الابتداء بما بعده اتفاقًا." },
       examples: ["{طَيِّبِينَ ۙ}"] },
 
-    { id: "sign_muanaqah", cat: "signs", group: "signs", name: { en: "∴ ∴: Paired stop", ar: "∴ ∴: وقف المعانقة" },
+    { id: "sign_muanaqah", cat: "signs", group: "signs", mark: "ۛ", name: { en: "Paired stop: stop at one, not both", ar: "وقف المعانقة: على أحدهما فقط" },
       summary: { en: "Two sets of three dots close together: stop on one of them, not both.",
                  ar: "علامتان متقاربتان: يُوقف على إحداهما دون الأخرى." },
       letters: "∴ ∴", quizLetters: "∴",

@@ -54,7 +54,6 @@ ul.plain li { padding: .3rem 0; display: flex; justify-content: space-between; }
 
 .cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
 .cat { border-top: 5px solid var(--c); margin: 0; }
-.cat h2 { color: var(--c); }
 .bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; flex: 1; min-width: 60px; }
 .bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s; }
 .bar.big { height: 12px; margin-top: 1rem; }
@@ -63,7 +62,7 @@ ul.plain li { padding: .3rem 0; display: flex; justify-content: space-between; }
 .lead { font-size: 1.05rem; color: var(--muted); }
 .rule { border-inline-start: 5px solid var(--c); scroll-margin-top: 80px; }
 .rule header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-.ar-name { font-weight: 400; color: var(--c); font-size: 1.35rem; margin-inline-start: .4rem; }
+.ar-name { font-weight: 400; font-size: 1.35rem; margin-inline-start: .4rem; }
 .kv { display: grid; grid-template-columns: 9rem 1fr; gap: .8rem; padding: .45rem 0; border-top: 1px dashed var(--line); }
 .kv > span:first-child { color: var(--muted); font-size: .9rem; padding-top: .15rem; }
 .letters { font-size: 1.5rem; letter-spacing: .1em; }
@@ -199,3 +198,17 @@ button.lchip.error { border-color: var(--bad); color: var(--bad); }
 .off-status { margin: .4rem 0; }
 .offline .bar { margin-bottom: .2rem; }
 @media print { .install, .updated { display: none !important; } }
+
+/* Group colours used as text (highlights, headings, quiz letters), adjusted for readability:
+   20% darker on the light theme, halfway to white on the dark theme (all at least 4.2:1 contrast).
+   Browsers without color-mix() keep the plain group colour. */
+:root { --tc-mix: black; --tc-amt: 80%; }
+@media (prefers-color-scheme: dark) { :root { --tc-mix: white; --tc-amt: 50%; } }
+.hl, .cc, .cat h2, .ar-name { color: var(--c); color: color-mix(in srgb, var(--c) var(--tc-amt), var(--tc-mix)); }
+
+/* mushaf stop signs: the small mark printed above the text, enlarged (scaled) so its shape reads clearly */
+.sign-mark { display: inline-flex; align-items: center; justify-content: center; width: 9rem; height: 7rem; overflow: hidden;
+  border-radius: 16px; background: color-mix(in srgb, var(--c) 10%, transparent); vertical-align: middle; }
+.sign-mark > span { font-family: "Amiri", var(--ar-font); font-size: 3rem; line-height: 1; transform: translateY(.25rem) scale(2.4); }
+.sign-mark.small { width: 3.2rem; height: 2.6rem; border-radius: 8px; margin-inline-end: .4rem; }
+.sign-mark.small > span { font-size: 1.6rem; transform: translateY(.1rem) scale(1.5); }
