@@ -209,6 +209,5 @@ button.lchip.error { border-color: var(--bad); color: var(--bad); }
 /* mushaf stop signs: the small mark printed above the text, enlarged (scaled) so its shape reads clearly */
 .sign-mark { display: inline-flex; align-items: center; justify-content: center; width: 9rem; height: 7rem; overflow: hidden;
   border-radius: 16px; background: color-mix(in srgb, var(--c) 10%, transparent); vertical-align: middle; }
-.sign-mark > span { font-family: "Amiri", var(--ar-font); font-size: 3rem; line-height: 1; transform: translateY(.25rem) scale(2.4); }
 .sign-mark.small { width: 3.2rem; height: 2.6rem; border-radius: 8px; margin-inline-end: .4rem; }
-.sign-mark.small > span { font-size: 1.6rem; transform: translateY(.1rem) scale(1.5); }
+.sign-mark canvas { display: block; }

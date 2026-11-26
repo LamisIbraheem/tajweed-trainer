@@ -197,7 +197,38 @@
   });
   const catColor = r => catById[r.cat].color;
   // A mushaf stop sign (the small mark printed above the text), enlarged so its shape reads clearly.
-  const signMark = (r, small) => `<span class="sign-mark cc${small ? " small" : ""}" lang="ar" dir="rtl" style="--c:${catColor(r)}" role="img" aria-label="${esc(r.letters)}"><span> ${r.mark} </span></span>`;
+  // Drawn on a canvas and centred by the mark's measured ink, because phones place these marks at different
+  // heights (iPhone Safari pushed a CSS-positioned version out of its box).
+  const signMark = (r, small) => `<span class="sign-mark cc${small ? " small" : ""}" style="--c:${catColor(r)}" role="img" aria-label="${esc(r.letters)}"><canvas data-mark="${r.mark}"></canvas></span>`;
+  let fontsReady = 0;
+  function paintSigns(root = document) {
+    root.querySelectorAll(".sign-mark canvas").forEach(cv => {
+      const box = cv.parentElement, w = box.clientWidth, h = box.clientHeight;
+      if (!w || !h) return;
+      const dpr = window.devicePixelRatio || 1, color = getComputedStyle(box).color;
+      const key = [w, h, dpr, color, fontsReady].join();
+      if (cv.dataset.painted === key) return;
+      cv.dataset.painted = key;
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+      cv.style.width = w + "px"; cv.style.height = h + "px";
+      const ctx = cv.getContext("2d");
+      const text = "\u00A0" + cv.dataset.mark;   // a no-break space as the base, so no dotted circle is drawn
+      ctx.font = `100px "Amiri", "Traditional Arabic", "Geeza Pro", "Noto Naskh Arabic", serif`;
+      ctx.direction = "rtl";
+      const m = ctx.measureText(text);
+      const inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight, inkH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+      if (!(inkW > 0 && inkH > 0)) return;
+      const scale = Math.min(cv.width * 0.72 / inkW, cv.height * 0.72 / inkH);
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.fillStyle = color;
+      // put the centre of the ink box at the centre of the canvas
+      const cx = cv.width / 2 / scale, cy = cv.height / 2 / scale;
+      ctx.fillText(text, cx - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2, cy + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
+    });
+  }
+  // Repaint when the Quran font has loaded and when the light/dark theme changes.
+  if (document.fonts && document.fonts.load) document.fonts.load('40px "Amiri"', "\u00A0\u06D7").then(() => { fontsReady = 1; paintSigns(); }, () => {});
+  if (window.matchMedia) { const mq = matchMedia("(prefers-color-scheme: dark)"); if (mq.addEventListener) mq.addEventListener("change", () => setTimeout(() => paintSigns(), 50)); }
   function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function setNav(route) {
     document.querySelectorAll("nav a[data-r]").forEach(a => a.classList.toggle("active", a.dataset.r === route));
@@ -724,7 +755,7 @@
       if (/[0-9%]/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/[0-9]/g, d => AR_DIGITS[d]).replace(/%/g, "٪");
     }
   }
-  new MutationObserver(() => localizeDigits(app)).observe(app, { childList: true, subtree: true, characterData: true });
+  new MutationObserver(() => { localizeDigits(app); paintSigns(app); }).observe(app, { childList: true, subtree: true, characterData: true });
 
   function applyLang() {
     document.documentElement.lang = state.lang;
