@@ -211,3 +211,14 @@ button.lchip.error { border-color: var(--bad); color: var(--bad); }
   border-radius: 16px; background: color-mix(in srgb, var(--c) 10%, transparent); vertical-align: middle; }
 .sign-mark.small { width: 3.2rem; height: 2.6rem; border-radius: 8px; margin-inline-end: .4rem; }
 .sign-mark canvas { display: block; }
+
+/* daily review */
+.review-card { border-inline-start: 5px solid var(--accent); }
+.review-card.due { background: color-mix(in srgb, var(--accent) 7%, var(--card)); }
+.review-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+.review-head h2 { margin: 0; }
+.streak { font-weight: 700; font-size: .9rem; padding: .2rem .6rem; border-radius: 99px; background: color-mix(in srgb, #ff8f00 18%, var(--card)); }
+.streak-big { font-size: 1.15rem; font-weight: 700; margin: .8rem 0 .2rem; }
+.review-dots { display: flex; flex-wrap: wrap; gap: .3rem; margin: .2rem 0 .4rem; }
+.review-dots .dot { width: .8rem; height: .8rem; }
+.small { font-size: .82rem; }

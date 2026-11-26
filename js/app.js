@@ -9,7 +9,7 @@
 
   // ---------- state ----------
   function loadState() {
-    const blank = { lang: "en", learned: {}, stats: {}, history: [] };
+    const blank = { lang: "en", learned: {}, stats: {}, history: [], srs: {}, streak: { count: 0, last: null } };
     try { return Object.assign(blank, JSON.parse(localStorage.getItem(KEY)) || {}); }
     catch (e) { return blank; }
   }
@@ -55,7 +55,63 @@
     const s = ruleStat(id);
     s.a++; if (ok) s.c++;
     s.recent.push(ok ? 1 : 0); if (s.recent.length > 10) s.recent.shift();
-    state.stats[id] = s; save();
+    state.stats[id] = s;
+    schedule(id, ok);
+    save();
+  }
+
+  // ---------- daily review (spaced repetition) ----------
+  // Each rule sits in a box 0–4. A right answer moves it up one box (at most once a day) and it comes back
+  // after 1, 3, 7, 14 or 30 days; a wrong answer puts it back in box 0, due tomorrow. Every quiz answer counts.
+  const INTERVALS = [1, 3, 7, 14, 30];
+  const REVIEW_MAX = 10, REVIEW_NEW = 3, SECONDS_PER_QUESTION = 20;
+  const dayStr = (offset = 0, from = new Date()) => { const d = new Date(from); d.setDate(d.getDate() + offset); return d.toLocaleDateString("en-CA"); };   // local YYYY-MM-DD
+  const today = () => dayStr(0);
+  function schedule(id, ok) {
+    const s = state.srs[id], now = today();
+    if (!ok) { state.srs[id] = { box: 0, due: dayStr(1), last: now }; return; }
+    const box = !s ? 0 : s.last === now ? s.box : Math.min(s.box + 1, INTERVALS.length - 1);
+    state.srs[id] = { box, due: dayStr(INTERVALS[box]), last: now };
+  }
+  function hasQuestions(r) {
+    const c = catById[r.cat];
+    if (c.quiz === "none") return false;
+    return c.quiz === "letters" ? !!r.quizLetters : r.examples.length > 0 || !!r.trigger;
+  }
+  // Progress from before daily review existed: rules already practised join the schedule
+  // (weak ones due today, strong ones in a few days).
+  function seedSchedule() {
+    let changed = false;
+    rules.forEach(r => {
+      if (state.srs[r.id] || !hasQuestions(r) || !ruleStat(r.id).a) return;
+      const strong = (ruleAcc(r.id) || 0) >= 0.8;
+      state.srs[r.id] = { box: strong ? 1 : 0, due: dayStr(strong ? 3 : 0), last: null };
+      changed = true;
+    });
+    if (changed) save();
+  }
+  // Today's review: rules that are due (oldest first), plus a few studied rules that haven't been practised yet.
+  function reviewItems() {
+    const now = today();
+    const due = rules.filter(r => hasQuestions(r) && state.srs[r.id] && state.srs[r.id].due <= now)
+      .sort((a, b) => state.srs[a.id].due.localeCompare(state.srs[b.id].due) || state.srs[a.id].box - state.srs[b.id].box);
+    const fresh = rules.filter(r => hasQuestions(r) && state.learned[r.id] && !state.srs[r.id]).slice(0, REVIEW_NEW);
+    return [...due.slice(0, REVIEW_MAX - Math.min(fresh.length, REVIEW_NEW)), ...fresh].slice(0, REVIEW_MAX);
+  }
+  function nextReviewDate() {
+    const dates = Object.entries(state.srs).filter(([id]) => ruleById[id] && hasQuestions(ruleById[id])).map(([, s]) => s.due).sort();
+    return dates[0] || null;
+  }
+  function streakActive() { const s = state.streak; return s && s.count > 0 && (s.last === today() || s.last === dayStr(-1)); }
+  function finishReviewDay() {
+    const s = state.streak || { count: 0, last: null }, now = today();
+    if (s.last === now) return;
+    state.streak = { count: s.last === dayStr(-1) ? s.count + 1 : 1, last: now };
+  }
+  function fmtDay(d) {
+    if (d <= today()) return t("todayWord");
+    if (d === dayStr(1)) return t("tomorrowWord");
+    return new Date(d + "T12:00:00").toLocaleDateString(state.lang === "ar" ? "ar" : undefined, { weekday: "long", day: "numeric", month: "long" });
   }
 
   // ---------- rendering helpers ----------
@@ -243,11 +299,23 @@
     const next = rules.find(r => !state.learned[r.id]);
     const weak = rules.filter(r => ruleStat(r.id).a > 0).sort((x, y) => ruleAcc(x.id) - ruleAcc(y.id)).slice(0, 4)
       .filter(r => ruleAcc(r.id) < 0.8);
+    const items = reviewItems(), nextDue = nextReviewDate();
+    const mins = Math.max(1, Math.round(items.length * SECONDS_PER_QUESTION / 60));
     app.innerHTML = `
       <section class="hero">
         <h1>${t("appName")}</h1>
         <p>${t("welcome")}</p>
         <div class="bismillah ar" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+      </section>
+      <section class="card review-card${items.length ? " due" : ""}">
+        <div class="review-head"><h2>${t("dailyReview")}</h2>${streakActive() ? `<span class="streak">🔥 ${t("streakDays").replace("{n}", state.streak.count)}</span>` : ""}</div>
+        ${items.length
+          ? `<p>${t("reviewDue").replace("{n}", items.length).replace("{m}", mins)}</p>
+             <div class="review-dots">${items.map(r => `<span class="dot" title="${esc(L(r.name))}" style="background:${catColor(r)}"></span>`).join("")}</div>
+             <div class="row"><a class="btn" href="#/review">${t("reviewStart")}</a></div>`
+          : nextDue ? `<p>${t("reviewNone").replace("{date}", fmtDay(nextDue))}</p>`
+          : `<p class="muted">${t("reviewEmpty")}</p>`}
+        <p class="muted small">${t("reviewHow")}</p>
       </section>
       <section class="stats">
         <div class="stat"><b>${learned}/${rules.length}</b><span>${t("rulesLearned")}</span></div>
@@ -331,17 +399,19 @@
   // ---------- quiz ----------
   let quiz = null;
 
+  // Every question a rule can produce.
+  function questionsFor(r) {
+    // Makharij / sifat / stop signs: one question per letter ("where is it pronounced from?" / "which characteristic?").
+    if (catById[r.cat].quiz === "letters") return (r.quizLetters || "").split(" ").filter(Boolean).map(l => ({ type: "sound", rule: r.id, letter: l }));
+    return [
+      ...r.examples.map(ex => ({ type: "ex", rule: r.id, ex })),
+      ...(r.trigger ? r.trigger.letters.split(" ").map(l => ({ type: "letter", rule: r.id, prefix: r.trigger.prefix, letter: l })) : [])
+    ];
+  }
+  const withOptions = q => Object.assign(q, { options: q.type === "sound" ? buildLetterOptions(q.rule, q.letter) : buildOptions(q.rule) });
+
   function buildQuestions(catIds, n, mode) {
-    const pool = [];
-    rules.filter(r => catIds.includes(r.cat)).forEach(r => {
-      // Makharij / sifat: one question per letter ("where is it pronounced from?" / "which characteristic?").
-      if (catById[r.cat].quiz === "letters") {
-        (r.quizLetters || "").split(" ").filter(Boolean).forEach(l => pool.push({ type: "sound", rule: r.id, letter: l }));
-        return;
-      }
-      r.examples.forEach(ex => pool.push({ type: "ex", rule: r.id, ex }));
-      if (r.trigger) r.trigger.letters.split(" ").forEach(l => pool.push({ type: "letter", rule: r.id, prefix: r.trigger.prefix, letter: l }));
-    });
+    const pool = rules.filter(r => catIds.includes(r.cat)).flatMap(questionsFor);
     const counts = {};
     pool.forEach(q => { const k = q.rule + q.type; counts[k] = (counts[k] || 0) + 1; });
     const weight = q => {
@@ -359,7 +429,17 @@
       const q = cands[k]; used.add(pool.indexOf(q)); perRule[q.rule] = (perRule[q.rule] || 0) + 1;
       picked.push(q);
     }
-    return picked.map(q => Object.assign(q, { options: q.type === "sound" ? buildLetterOptions(q.rule, q.letter) : buildOptions(q.rule) }));
+    return picked.map(withOptions);
+  }
+
+  // Today's review: one question per scheduled rule, in random order.
+  function startReview() {
+    setNav("home");
+    const items = reviewItems();
+    if (!items.length) { location.hash = "#/"; return; }
+    const qs = shuffle(items).map(r => { const pool = questionsFor(r); return withOptions(Object.assign({}, pool[Math.floor(Math.random() * pool.length)])); });
+    quiz = { cats: [...new Set(items.map(r => r.cat))], mode: "review", qs, i: 0, answers: [] };
+    viewQuestion();
   }
 
   // Choices for a single-letter question: only rules from the same group (e.g. hams vs jahr),
@@ -478,14 +558,19 @@
 
   function viewResults() {
     const score = quiz.answers.filter(a => a.ok).length, total = quiz.answers.length;
+    const isReview = quiz.mode === "review";
+    if (isReview) { finishReviewDay(); history.replaceState(null, "", "#/"); }   // so a refresh or language switch doesn't start another review
     state.history.unshift({ date: new Date().toISOString(), score, total, cats: quiz.cats, mode: quiz.mode });
     state.history = state.history.slice(0, 50); save();
     const wrong = quiz.answers.filter(a => !a.ok);
+    const next = isReview ? nextReviewDate() : null, left = isReview ? reviewItems().length : 0;
     app.innerHTML = `
-      <h1>${t("results")}</h1>
+      <h1>${isReview ? t("reviewDoneTitle") : t("results")}</h1>
       <div class="card center">
         <div class="score">${score} / ${total}</div>
         <div class="bar big"><i style="width:${100 * score / total}%"></i></div>
+        ${isReview ? `<p class="streak-big">🔥 ${t("streakDays").replace("{n}", state.streak.count)}</p>
+          <p class="muted">${left ? t("reviewMoreToday").replace("{n}", left) : next ? t("reviewNext").replace("{date}", fmtDay(next)) : ""}</p>` : ""}
       </div>
       <div class="card">
         <h2>${t("review")}</h2>
@@ -498,7 +583,9 @@
             <div><s class="muted">${esc(L(ruleById[a.chosen].name))}</s> → <a href="#/lesson/${r.cat}#${r.id}"><b>${esc(L(r.name))}</b></a></div></div>`;
         }).join("") : `<p>${t("noMistakes")}</p>`}
       </div>
-      <div class="row"><a class="btn" href="#/quiz?cats=${quiz.cats.join(",")}&mode=${quiz.mode}">${t("again")}</a><a class="btn ghost" href="#/progress">${t("progress")}</a></div>`;
+      <div class="row">${isReview
+        ? (left ? `<a class="btn" href="#/review">${t("reviewContinue")}</a>` : "") + `<a class="btn${left ? " ghost" : ""}" href="#/">${t("home")}</a>`
+        : `<a class="btn" href="#/quiz?cats=${quiz.cats.join(",")}&mode=${quiz.mode}">${t("again")}</a>`}<a class="btn ghost" href="#/progress">${t("progress")}</a></div>`;
     quiz = null;
   }
 
@@ -526,7 +613,7 @@
         ${state.history.length ? `<table><tbody>${state.history.map(h => `<tr>
           <td>${new Date(h.date).toLocaleString(state.lang === "ar" ? "ar" : undefined, { dateStyle: "medium", timeStyle: "short" })}</td>
           <td><b>${h.score}/${h.total}</b></td>
-          <td class="muted">${h.cats.length === categories.length ? t("allCats") : h.cats.map(id => esc(L(catById[id].name))).join("، ")}</td></tr>`).join("")}</tbody></table>`
+          <td class="muted">${h.mode === "review" ? t("dailyReview") : h.cats.length === categories.length ? t("allCats") : h.cats.map(id => esc(L(catById[id].name))).join("، ")}</td></tr>`).join("")}</tbody></table>`
           : `<p class="muted">${t("noHistory")}</p>`}
       </div>
       ${"caches" in window ? `<div class="card offline">
@@ -557,7 +644,7 @@
       <button class="btn danger" id="reset">${t("reset")}</button>`;
     if (app.querySelector("#off-get")) setupOfflineAudio();
     app.querySelector("#reset").onclick = () => {
-      if (confirm(t("resetConfirm"))) { state = Object.assign(loadState(), { learned: {}, stats: {}, history: [] }); save(); viewProgress(); }
+      if (confirm(t("resetConfirm"))) { state = Object.assign(loadState(), { learned: {}, stats: {}, history: [], srs: {}, streak: { count: 0, last: null } }); save(); viewProgress(); }
     };
     const box = app.querySelector("#bk-code"), msg = app.querySelector("#bk-msg");
     const say = (k, ok) => { msg.textContent = t(k); msg.className = "bk-msg " + (ok ? "ok" : "bad"); };
@@ -580,7 +667,7 @@
       const data = parseBackup(text);
       if (!data) return say("backupInvalid", false);
       if (!confirm(t("backupConfirm"))) return;
-      Object.assign(state, data); save(); viewProgress();
+      Object.assign(state, data); seedSchedule(); save(); viewProgress();
       const m = app.querySelector("#bk-msg"); m.textContent = t("backupLoaded"); m.className = "bk-msg ok";
     };
     app.querySelector("#bk-load").onclick = () => load(box.value);
@@ -648,7 +735,7 @@
 
   // ---------- backup (export / import) ----------
   function exportData() {
-    return { app: "tajweed-trainer", v: 1, saved: new Date().toISOString(), learned: state.learned, stats: state.stats, history: state.history };
+    return { app: "tajweed-trainer", v: 1, saved: new Date().toISOString(), learned: state.learned, stats: state.stats, history: state.history, srs: state.srs, streak: state.streak };
   }
   function exportCode() {
     const bytes = new TextEncoder().encode(JSON.stringify(exportData()));
@@ -677,9 +764,17 @@
       }
       const history = (Array.isArray(d.history) ? d.history : [])
         .filter(h => isObj(h) && !isNaN(new Date(h.date)) && Array.isArray(h.cats))
-        .map(h => ({ date: h.date, score: num(h.score), total: num(h.total), cats: h.cats.filter(id => catById[id]), mode: h.mode === "weak" ? "weak" : "mixed" }))
+        .map(h => ({ date: h.date, score: num(h.score), total: num(h.total), cats: h.cats.filter(id => catById[id]), mode: ["weak", "review"].includes(h.mode) ? h.mode : "mixed" }))
         .filter(h => h.total > 0 && h.cats.length).slice(0, 50);
-      return { learned, stats, history };
+      // Daily review schedule and streak (absent in backups made before daily review existed).
+      const isDay = x => typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x);
+      const srs = {};
+      if (isObj(d.srs)) for (const id in d.srs) {
+        const s = d.srs[id];
+        if (ruleById[id] && isObj(s) && isDay(s.due)) srs[id] = { box: Math.min(num(s.box), INTERVALS.length - 1), due: s.due, last: isDay(s.last) ? s.last : null };
+      }
+      const streak = isObj(d.streak) && isDay(d.streak.last) ? { count: num(d.streak.count), last: d.streak.last } : { count: 0, last: null };
+      return { learned, stats, history, srs, streak };
     } catch (e) { return null; }
   }
 
@@ -720,12 +815,13 @@
     const [path, qs] = pathPart.split("?");
     const params = new URLSearchParams(qs || "");
     const parts = path.split("/").filter(Boolean);
-    if (quiz && parts[0] !== "quiz") quiz = null;
+    if (quiz && parts[0] !== "quiz" && parts[0] !== "review") quiz = null;
     if (parts[0] === "lessons") viewLessons();
     else if (parts[0] === "lesson") viewLesson(parts[1], focus);
     else if (parts[0] === "quiz") viewQuizSetup(params);
     else if (parts[0] === "progress") viewProgress();
     else if (parts[0] === "print") viewPrint();
+    else if (parts[0] === "review") startReview();
     else viewHome();
     if (!focus) window.scrollTo(0, 0);
     countPage("#/" + parts.join("/"));
@@ -824,5 +920,6 @@
   };
   document.addEventListener("keydown", e => { if (quiz && quiz.keyHandler) quiz.keyHandler(e); });
   window.addEventListener("hashchange", route);
+  seedSchedule();
   applyLang(); route();
 })();
