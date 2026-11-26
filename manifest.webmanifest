@@ -1,0 +1,20 @@
+{
+  "name": "Tajweed Trainer · معلّم التجويد",
+  "short_name": "Tajweed",
+  "description": "Free tajweed lessons, quizzes and recitation practice (Hafs 'an 'Asim), in English and Arabic. Works offline.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f4ec",
+  "theme_color": "#1f6f5c",
+  "lang": "en",
+  "dir": "auto",
+  "categories": ["education", "books"],
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

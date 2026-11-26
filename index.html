@@ -7,7 +7,13 @@
   <meta name="description" content="Free tajweed lessons and quizzes for Quran recitation (Hafs 'an 'Asim), in English and Arabic. No sign-up, works on any phone. دروس واختبارات مجانية في أحكام التلاوة.">
   <meta name="theme-color" content="#1f6f5c">
   <link rel="icon" type="image/png" href="img/icon.png">
-  <link rel="apple-touch-icon" href="img/icon.png">
+  <!-- Installable app (home-screen icon, works offline): manifest + service worker (sw.js, registered in app.js) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Tajweed">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="canonical" href="https://lamisibraheem.github.io/tajweed-trainer/">
   <!-- Link previews (WhatsApp, Telegram, Facebook, X, LinkedIn…) -->
   <meta property="og:type" content="website">
@@ -24,7 +30,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;600;700&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=20261125c">
+  <link rel="stylesheet" href="css/style.css?v=20261125e">
 </head>
 <body>
   <header class="top">
@@ -49,10 +55,10 @@
     <p class="footer-links"><a href="#/print" data-t="printCopy"></a> ·
       <a href="https://github.com/LamisIbraheem/tajweed-trainer/issues/new" target="_blank" rel="noopener" data-t="reportGeneral"></a></p>
   </footer>
-  <script src="js/data.js?v=20261125c"></script>
-  <script src="js/audio.js?v=20261125c"></script>
-  <script src="js/i18n.js?v=20261125c"></script>
-  <script src="js/app.js?v=20261125c"></script>
+  <script src="js/data.js?v=20261125e"></script>
+  <script src="js/audio.js?v=20261125e"></script>
+  <script src="js/i18n.js?v=20261125e"></script>
+  <script src="js/app.js?v=20261125e"></script>
   <!-- Visitor counter (GoatCounter: no cookies, no personal data). Pages are counted by app.js on each route change. -->
   <script data-goatcounter="https://tajweed-trainer.goatcounter.com/count" data-goatcounter-settings='{"no_onload": true}'
           async src="https://gc.zgo.at/count.js"></script>

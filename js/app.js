@@ -77,6 +77,9 @@
   // ---------- audio (al-Husary, played word-accurate from the full-ayah recording) ----------
   const AUDIO = window.TAJWEED_AUDIO || { base: "", clips: {} };
   const player = new Audio(); player.preload = "none";
+  // CORS mode (everyayah allows it), so the network and the offline copy served by sw.js give the same kind of
+  // response: browsers refuse to mix opaque and readable responses for one audio file.
+  player.crossOrigin = "anonymous";
   let playing = null, stopTimer = null, onClipDone = null;
   function stopClip() {
     clearInterval(stopTimer); stopTimer = null; player.pause(); onClipDone = null;
@@ -490,6 +493,16 @@
           <td class="muted">${h.cats.length === categories.length ? t("allCats") : h.cats.map(id => esc(L(catById[id].name))).join("، ")}</td></tr>`).join("")}</tbody></table>`
           : `<p class="muted">${t("noHistory")}</p>`}
       </div>
+      ${"caches" in window ? `<div class="card offline">
+        <h2>${t("offlineTitle")}</h2>
+        <p class="muted">${t("offlineIntro")}</p>
+        <p id="off-status" class="off-status"></p>
+        <div class="bar"><i id="off-bar" style="width:0%"></i></div>
+        <div class="row">
+          <button class="btn" id="off-get">${t("offlineGet")}</button>
+          <button class="btn ghost" id="off-del">${t("offlineDel")}</button>
+        </div>
+      </div>` : ""}
       <div class="card backup">
         <h2>${t("backupTitle")}</h2>
         <p class="muted">${t("backupIntro")}</p>
@@ -506,6 +519,7 @@
         <p id="bk-msg" class="bk-msg" role="status"></p>
       </div>
       <button class="btn danger" id="reset">${t("reset")}</button>`;
+    if (app.querySelector("#off-get")) setupOfflineAudio();
     app.querySelector("#reset").onclick = () => {
       if (confirm(t("resetConfirm"))) { state = Object.assign(loadState(), { learned: {}, stats: {}, history: [] }); save(); viewProgress(); }
     };
@@ -538,6 +552,61 @@
       const f = e.target.files[0]; if (!f) return;
       f.text().then(load, () => say("backupInvalid", false));
       e.target.value = "";
+    };
+  }
+
+  // ---------- offline audio (Progress page) ----------
+  // Saves every ayah recording the examples use into the "tajweed-audio" cache, which sw.js serves offline.
+  const AUDIO_CACHE = "tajweed-audio";
+  let offlineJob = null;
+  function audioFiles() { return [...new Set(Object.values(AUDIO.clips).map(c => c[0]))].map(f => AUDIO.base + f); }
+  function setupOfflineAudio() {
+    const files = audioFiles(), status = app.querySelector("#off-status"), bar = app.querySelector("#off-bar");
+    const get = app.querySelector("#off-get"), del = app.querySelector("#off-del");
+    const show = (n, busy) => {
+      if (!status.isConnected) return;
+      status.textContent = t("offlineStatus").replace("{n}", n).replace("{total}", files.length);
+      bar.style.width = (100 * n / files.length) + "%";
+      get.disabled = busy || n === files.length; del.disabled = busy || n === 0;
+      get.textContent = busy ? t("offlineBusy") : n === files.length ? t("offlineDone") : t("offlineGet");
+      localizeDigits(status);
+    };
+    const count = async () => {
+      const keys = await (await caches.open(AUDIO_CACHE)).keys();
+      const have = new Set(keys.map(k => k.url));
+      return files.filter(f => have.has(f)).length;
+    };
+    count().then(n => show(n, !!offlineJob));
+    get.onclick = async () => {
+      if (offlineJob) return;
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});   // ask the browser not to evict it
+      offlineJob = true;
+      const cache = await caches.open(AUDIO_CACHE);
+      const have = new Set((await cache.keys()).map(k => k.url));
+      const todo = files.filter(f => !have.has(f));
+      let done = files.length - todo.length, failed = 0;
+      show(done, true);
+      const viaWorker = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+      const worker = async () => {
+        while (todo.length) {
+          const f = todo.shift();
+          try {
+            if (viaWorker) { const r = await fetch(f + "?dl=1", { mode: "cors" }); if (!r.ok) throw 0; }   // sw.js saves it
+            else { const r = await fetch(f, { mode: "cors" }); if (!r.ok) throw 0; await cache.put(f, r); }
+            done++;
+          } catch (e) { failed++; }
+          show(done, true);
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      offlineJob = null;
+      show(await count(), false);
+      if (failed && status.isConnected) { status.textContent += " " + t("offlineFailed"); }
+    };
+    del.onclick = async () => {
+      if (offlineJob || !confirm(t("offlineDelConfirm"))) return;
+      await caches.delete(AUDIO_CACHE);
+      show(0, false);
     };
   }
 
@@ -658,6 +727,59 @@
     document.title = t("appName");
     document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
     localizeDigits(document.querySelector("footer"));
+    if (banner.kind) showInstallBanner(banner.kind);   // re-draw in the new language
+  }
+
+  // ---------- install as an app + offline ----------
+  // The service worker (sw.js) keeps the site working offline; see the notes at the top of that file.
+  const INSTALL_KEY = "tajweed.install";   // "dismissed" or "installed": don't show the banner again
+  const banner = { kind: null, prompt: null };
+  const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function installChoice() { try { return localStorage.getItem(INSTALL_KEY); } catch (e) { return null; } }
+  function rememberInstall(v) { try { localStorage.setItem(INSTALL_KEY, v); } catch (e) {} }
+  function hideInstallBanner() { banner.kind = null; const el = document.getElementById("install"); if (el) el.remove(); }
+  function showInstallBanner(kind) {
+    if (isStandalone() || installChoice()) return;
+    banner.kind = kind;
+    let el = document.getElementById("install");
+    if (!el) { el = document.createElement("div"); el.id = "install"; el.className = "install"; el.setAttribute("role", "dialog"); document.body.appendChild(el); }
+    el.innerHTML = `
+      <img src="img/icon-192.png" alt="" width="44" height="44">
+      <div class="install-text"><b>${t("installTitle")}</b>
+        <span>${kind === "ios" ? t("installIos") : t("installBody")}</span></div>
+      ${kind === "android" ? `<button class="btn small" id="install-go">${t("installBtn")}</button>` : ""}
+      <button class="install-x" id="install-x" aria-label="${t("close")}" title="${t("close")}">✕</button>`;
+    el.querySelector("#install-x").onclick = () => { rememberInstall("dismissed"); hideInstallBanner(); };
+    const go = el.querySelector("#install-go");
+    if (go) go.onclick = async () => {
+      if (!banner.prompt) return;
+      banner.prompt.prompt();
+      const { outcome } = await banner.prompt.userChoice;
+      banner.prompt = null; hideInstallBanner();
+      if (outcome === "accepted") rememberInstall("installed");
+    };
+  }
+  // Android / desktop Chrome & Edge: the browser says the site can be installed, so offer our own button.
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault(); banner.prompt = e;
+    setTimeout(() => showInstallBanner("android"), 2500);
+  });
+  window.addEventListener("appinstalled", () => { rememberInstall("installed"); hideInstallBanner(); });
+  // iPhone / iPad: Safari never offers installation itself, so explain the two steps once.
+  if (isIOS && !isStandalone()) setTimeout(() => showInstallBanner("ios"), 2500);
+
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    const hadWorker = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // A newer version took over while this page was open: offer a refresh (pages opened later are already new).
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadWorker || document.getElementById("updated")) return;
+      const el = document.createElement("button");
+      el.id = "updated"; el.className = "updated"; el.textContent = t("updated");
+      el.onclick = () => location.reload();
+      document.body.appendChild(el);
+    });
   }
 
   document.getElementById("lang").onclick = () => {
