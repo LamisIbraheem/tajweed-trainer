@@ -222,3 +222,18 @@ button.lchip.error { border-color: var(--bad); color: var(--bad); }
 .review-dots { display: flex; flex-wrap: wrap; gap: .3rem; margin: .2rem 0 .4rem; }
 .review-dots .dot { width: .8rem; height: .8rem; }
 .small { font-size: .82rem; }
+
+/* end quiz + auto-continue after a right answer */
+.endquiz { flex: none; border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 99px;
+  padding: .25rem .7rem; font: 600 .8rem "Inter", sans-serif; cursor: pointer; }
+.endquiz:hover { color: var(--bad); border-color: var(--bad); }
+@media (max-width: 480px) { .endquiz span { display: none; } }
+.btn.auto { position: relative; overflow: hidden; }
+.btn.auto::before { content: ""; position: absolute; inset: 0; background: rgba(255,255,255,.3); transform: scaleX(0); transform-origin: left;
+  animation: autofill var(--auto-ms, 3000ms) linear forwards; }
+[dir=rtl] .btn.auto::before { transform-origin: right; }
+.btn.auto > span { position: relative; }
+@keyframes autofill { to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .btn.auto::before { animation-duration: 0s; animation-delay: var(--auto-ms, 3000ms); } }
+.autohint { min-height: 1.2em; margin: .5rem 0 0; }
+.autohint:empty { display: none; }

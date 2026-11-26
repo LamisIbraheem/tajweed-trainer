@@ -492,10 +492,15 @@
           <label class="chip"><input type="radio" name="mode" value="mixed" ${mode === "mixed" ? "checked" : ""}> ${t("modeMixed")}</label>
           <label class="chip"><input type="radio" name="mode" value="weak" ${mode === "weak" ? "checked" : ""}> ${t("modeWeak")}</label>
         </div>
+        <h3>${t("afterAnswer")}</h3>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" id="autonext" ${state.autoNext !== false ? "checked" : ""}> ${t("autoNext")}</label>
+        </div>
         <div class="row"><button class="btn" id="begin">${t("begin")}</button></div>
       </div>`;
     const boxes = [...app.querySelectorAll("input[name=cat]")];
     app.querySelector("#allc").onchange = e => boxes.forEach(b => b.checked = e.target.checked);
+    app.querySelector("#autonext").onchange = e => { state.autoNext = e.target.checked; save(); };   // also used by Daily review
     boxes.forEach(b => b.onchange = () => app.querySelector("#allc").checked = boxes.every(x => x.checked));
     app.querySelector("#begin").onclick = () => {
       const cats = boxes.filter(b => b.checked).map(b => b.value);
@@ -520,12 +525,29 @@
       : `<p class="qtext">${t("qLetterTitle")}</p><div class="qar"><span class="ar" lang="ar" dir="rtl">${esc(q.prefix)} <span class="plus">+</span> <span class="hl" style="--c:${catColor(r)}">${esc(q.letter)}</span></span></div>`;
     app.innerHTML = `
       <div class="qhead"><span>${t("question")} ${quiz.i + 1} ${t("of")} ${quiz.qs.length}</span>
-        <div class="bar"><i style="width:${100 * quiz.i / quiz.qs.length}%"></i></div></div>
+        <div class="bar"><i style="width:${100 * quiz.i / quiz.qs.length}%"></i></div>
+        <button class="endquiz" id="endquiz" type="button" title="${t("endQuiz")}">✕ <span>${t("endQuiz")}</span></button></div>
       <div class="card quiz">
         ${prompt}
         <div class="options">${q.options.map((id, k) => `<button class="opt" data-id="${id}"><kbd>${k + 1}</kbd> ${esc(L(ruleById[id].name))}</button>`).join("")}</div>
         <div id="fb"></div>
       </div>`;
+    const last = quiz.i === quiz.qs.length - 1;
+    let auto = null;   // { timer, listeners } while a right answer is counting down to the next question
+    const stopAuto = paused => {
+      if (!auto) return;
+      clearTimeout(auto.timer); auto.listeners.abort(); auto = null;
+      const nb = app.querySelector("#nextq"), hint = app.querySelector("#autohint");
+      if (nb) nb.classList.remove("auto");
+      if (hint) hint.textContent = paused ? t("autoPaused") : "";
+    };
+    const goNext = () => { stopAuto(false); stopClip(); quiz.answered = false; quiz.i++; last ? viewResults() : viewQuestion(); };
+    // End quiz: keep what was answered and show the results; with nothing answered, just leave.
+    app.querySelector("#endquiz").onclick = () => {
+      stopAuto(false); stopClip(); stopRec();
+      if (quiz.answers.length) viewResults();
+      else { const back = quiz.mode === "review" ? "#/" : "#/quiz"; quiz = null; history.replaceState(null, "", back); route(); }
+    };
     const answer = id => {
       if (quiz.answered) return; quiz.answered = true;
       const ok = id === q.rule;
@@ -536,25 +558,41 @@
         if (b.dataset.id === q.rule) b.classList.add("right");
         else if (b.dataset.id === id) b.classList.add("wrongopt");
       });
-      const last = quiz.i === quiz.qs.length - 1;
+      const autoOn = ok && state.autoNext !== false;
       app.querySelector("#fb").innerHTML = `
         <div class="feedback ${ok ? "ok" : "bad"}">
           <b>${ok ? t("correct") : t("wrong") + " " + t("answerWas") + ": " + esc(L(r.name))}</b>
           <p>${esc(L(r.summary))}</p>
-          <div class="row"><button class="btn" id="nextq">${last ? t("finish") : t("next")}</button>
+          <div class="row"><button class="btn${autoOn ? " auto" : ""}" id="nextq" style="--auto-ms:${AUTO_NEXT_MS}ms"><span>${last ? t("finish") : t("next")}</span></button>
           <a class="btn ghost" href="#/lesson/${r.cat}#${r.id}" target="_self">${t("openLesson")}</a></div>
+          <p class="autohint muted small" id="autohint" aria-live="polite">${autoOn ? t("autoHint") : ""}</p>
           <a class="report" href="${reportUrl(r, q.type === "ex" ? q.ex : q.type === "sound" ? q.letter : q.prefix + " + " + q.letter)}" target="_blank" rel="noopener">⚑ ${t("reportQuestion")}</a>
         </div>`;
-      app.querySelector("#nextq").focus();
-      app.querySelector("#nextq").onclick = () => { stopClip(); quiz.answered = false; quiz.i++; last ? viewResults() : viewQuestion(); };
+      const nb = app.querySelector("#nextq");
+      nb.focus({ preventScroll: true });
+      nb.onclick = goNext;
+      if (autoOn) {
+        // A right answer moves on by itself after a few seconds, unless the learner interacts:
+        // any tap (except Next), scrolling, playing audio or recording pauses it.
+        const listeners = new AbortController(), opts = { signal: listeners.signal, passive: true };
+        const pause = e => { if (!e || !e.target || !e.target.closest || !e.target.closest("#nextq")) stopAuto(true); };
+        app.addEventListener("pointerdown", pause, opts);
+        window.addEventListener("wheel", () => stopAuto(true), opts);
+        window.addEventListener("touchmove", () => stopAuto(true), opts);
+        document.addEventListener("visibilitychange", () => stopAuto(true), opts);
+        auto = { listeners, timer: setTimeout(() => { if (playing || minePlaying || rec) stopAuto(true); else goNext(); }, AUTO_NEXT_MS) };
+      }
     };
     app.querySelectorAll(".opt").forEach(b => b.onclick = () => answer(b.dataset.id));
     quiz.keyHandler = e => {
-      if (e.key === "p" || e.key === "P") { const pb = app.querySelector(".qar .play"); if (pb) playClip(pb.dataset.ex, pb); return; }
+      if (e.key === "p" || e.key === "P") { stopAuto(true); const pb = app.querySelector(".qar .play"); if (pb) playClip(pb.dataset.ex, pb); return; }
+      // Enter / Space = Next (when Next has focus the browser already does this, so don't do it twice)
+      if (quiz.answered && (e.key === "Enter" || e.key === " ") && document.activeElement !== app.querySelector("#nextq")) { e.preventDefault(); goNext(); return; }
       const n = parseInt(e.key, 10);
       if (!quiz.answered && n >= 1 && n <= q.options.length) answer(q.options[n - 1]);
     };
   }
+  const AUTO_NEXT_MS = 3000;
 
   function viewResults() {
     const score = quiz.answers.filter(a => a.ok).length, total = quiz.answers.length;
